@@ -49,15 +49,27 @@ enum nrf_wifi_status pal_rpu_addr_offset_get(struct nrf_wifi_osal_priv *opriv,
 	} else if ((rpu_addr >= RPU_ADDR_RAM0_START) &&
 		   (rpu_addr <= RPU_ADDR_RAM0_END)) {
 		region_offset = SOC_MMAP_ADDR_OFFSET_RAM0_PKD;
+		*addr = region_offset + ((rpu_addr - RPU_ADDR_RAM0_START) & RPU_ADDR_RAM_ROM_MASK_OFFSET);
+		status = NRF_WIFI_STATUS_SUCCESS;
+		goto out;
 	} else if ((rpu_addr >= RPU_ADDR_RAM1_START) &&
 		   (rpu_addr <= RPU_ADDR_RAM1_END)) {
 		region_offset = SOC_MMAP_ADDR_OFFSET_RAM1_PKD;
+		*addr = region_offset + ((rpu_addr - RPU_ADDR_RAM1_START) & RPU_ADDR_RAM_ROM_MASK_OFFSET);
+		status = NRF_WIFI_STATUS_SUCCESS;
+		goto out;
 	} else if ((rpu_addr >= RPU_ADDR_ROM0_START) &&
 		   (rpu_addr <= RPU_ADDR_ROM0_END)) {
 		region_offset = SOC_MMAP_ADDR_OFFSET_ROM0_PKD;
+		*addr = region_offset + ((rpu_addr - RPU_ADDR_ROM0_START) & RPU_ADDR_RAM_ROM_MASK_OFFSET);
+		status = NRF_WIFI_STATUS_SUCCESS;
+		goto out;
 	} else if ((rpu_addr >= RPU_ADDR_ROM1_START) &&
 		   (rpu_addr <= RPU_ADDR_ROM1_END)) {
 		region_offset = SOC_MMAP_ADDR_OFFSET_ROM1_PKD;
+		*addr = region_offset + ((rpu_addr - RPU_ADDR_ROM1_START) & RPU_ADDR_RAM_ROM_MASK_OFFSET);
+		status = NRF_WIFI_STATUS_SUCCESS;
+		goto out;
 	} else if ((rpu_addr >= RPU_ADDR_DATA_RAM_START) &&
 		   (rpu_addr <= RPU_ADDR_DATA_RAM_END)) {
 		region_offset = SOC_MMAP_ADDR_OFFSET_DATA_RAM_PKD;
@@ -69,11 +81,12 @@ enum nrf_wifi_status pal_rpu_addr_offset_get(struct nrf_wifi_osal_priv *opriv,
 		region_offset = SOC_MMAP_ADDR_OFFSET_CODE_RAM_PKD;
         } else if (addr_base == RPU_ADDR_BELLBOARD_GRTC_REGION) {
 		bellboard_grtc_addr_base = (rpu_addr & RPU_ADDR_BELLBOARD_GRTC_MASK_BASE);
+
 		if (bellboard_grtc_addr_base == RPU_ADDR_BELLBOARD_APP_REGION)
-                	region_offset = SOC_MMAP_ADDR_OFFSET_BELLBOARD_WIFI_APP;
+			region_offset = SOC_MMAP_ADDR_OFFSET_BELLBOARD_APP;
 		else if (bellboard_grtc_addr_base == RPU_ADDR_BELLBOARD_WIFI_REGION)
-                	region_offset = SOC_MMAP_ADDR_OFFSET_BELLBOARD_WIFI_APP;
-        	else if (bellboard_grtc_addr_base == RPU_ADDR_GRTC_REGION)
+			region_offset = SOC_MMAP_ADDR_OFFSET_BELLBOARD_WIFI;
+		else if (bellboard_grtc_addr_base == RPU_ADDR_GRTC_REGION)
 	                region_offset = SOC_MMAP_ADDR_OFFSET_GRTC;
         } else if (addr_base == RPU_ADDR_FPGA_REGS_REGION) {
                 region_offset = SOC_MMAP_ADDR_OFFSET_FPGA_REGS;
@@ -106,8 +119,10 @@ enum nrf_wifi_status pal_rpu_addr_offset_get(struct nrf_wifi_osal_priv *opriv,
 		goto out;
 	}
 #ifdef SOC_WEZEN
-        if (addr_base == RPU_ADDR_BELLBOARD_GRTC_REGION)
+	if (addr_base == RPU_ADDR_BELLBOARD_GRTC_REGION)
 		*addr = region_offset + (rpu_addr & RPU_BELLBOARD_GRTC_ADDR_MASK_OFFSET);
+	else if (addr_base == RPU_ADDR_CODE_RAM_REGION)
+		*addr = region_offset + ((rpu_addr - RPU_ADDR_CODE_RAM_START) & RPU_ADDR_MASK_OFFSET);
 	else
 #endif
 	*addr = region_offset + (rpu_addr & RPU_ADDR_MASK_OFFSET);
@@ -123,9 +138,9 @@ unsigned long pal_rpu_rom_access_reg_addr_get(struct nrf_wifi_osal_priv *opriv)
         return SOC_MMAP_ADDR_OFFSET_ROM_ACCESS_FPGA_REG;
 }
 
-unsigned long pal_rpu_uicr_reg_offset_get(struct nrf_wifi_osal_priv *opriv)
+unsigned long pal_rpu_wicr_reg_offset_get(struct nrf_wifi_osal_priv *opriv)
 {
-	return SOC_MMAP_ADDR_OFFSET_UICR;
+	return SOC_MMAP_ADDR_OFFSET_WICR;
 }
 #endif
 

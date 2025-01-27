@@ -244,7 +244,6 @@ static enum nrf_wifi_status nrf_wifi_fmac_fw_init(struct nrf_wifi_fmac_dev_ctx *
 		goto out;
 	}
 
-	nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv, "--------Calling umac_cmd_init------\n");
 	status = umac_cmd_init(fmac_dev_ctx,
 			       rf_params,
 			       rf_params_valid,

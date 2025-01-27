@@ -154,7 +154,9 @@ static enum nrf_wifi_status rpu_mem_read_ram(struct nrf_wifi_hal_dev_ctx *hal_de
 #ifdef CONFIG_NRF_WIFI_LOW_POWER
 	unsigned long flags = 0;
 #endif /* CONFIG_NRF_WIFI_LOW_POWER */
-
+#ifdef SOC_WEZEN
+	unsigned long fpga_reg_addr_offset = 0;
+#endif
 	status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
 					 ram_addr_val,
 					 &addr_offset,
@@ -166,14 +168,11 @@ static enum nrf_wifi_status rpu_mem_read_ram(struct nrf_wifi_hal_dev_ctx *hal_de
 				      __func__);
 		return status;
 	}
-
 #ifdef CONFIG_NRF_WIFI_LOW_POWER
 	nrf_wifi_osal_spinlock_irq_take(hal_dev_ctx->hpriv->opriv,
 					hal_dev_ctx->rpu_ps_lock,
 					&flags);
-
 	status = hal_rpu_ps_wake(hal_dev_ctx);
-
 	if (status != NRF_WIFI_STATUS_SUCCESS) {
 		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
 				      "%s: RPU wake failed\n",
@@ -181,21 +180,54 @@ static enum nrf_wifi_status rpu_mem_read_ram(struct nrf_wifi_hal_dev_ctx *hal_de
 		goto out;
 	}
 #endif /* CONFIG_NRF_WIFI_LOW_POWER */
+#ifdef SOC_WEZEN
+	/* First set the SOC_MMAP_ADDR_OFFSET_ROM_ACCESS_FPGA_REG to 0
+	 * for RAM access
+	 */
+	status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
+                                         ROM_ACCESS_REG_ADDR,
+                                         &fpga_reg_addr_offset,
+                                         hal_dev_ctx->curr_proc);
 
+	if (status != NRF_WIFI_STATUS_SUCCESS) {
+		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+				      "%s: pal_rpu_addr_offset_get failed\n",
+				      __func__);
+		return status;
+	}
+	
+	nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
+                                fpga_reg_addr_offset,
+                                RPU_REG_BIT_ROM_ACCESS_DISABLE);
+	if (len == 4) {
+		*((unsigned int *)src_addr) = nrf_wifi_bal_read_word(hal_dev_ctx->bal_dev_ctx,
+								     addr_offset);
+	
+		if (*((unsigned int*)src_addr) == 0xFFFFFFFF) {
+	                nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+        	                              "%s: Error !! Value read at addr_offset = %lx is = %X\n",
+                	                      __func__,
+                        	              addr_offset,
+                                	     *((unsigned int*)src_addr));
+	                status = NRF_WIFI_STATUS_FAIL;
+        	        goto out1;
+        	}
+	} else 
+#endif
 	nrf_wifi_bal_read_block(hal_dev_ctx->bal_dev_ctx,
 				src_addr,
 				addr_offset,
 				len);
-
 	status = NRF_WIFI_STATUS_SUCCESS;
-
 #ifdef CONFIG_NRF_WIFI_LOW_POWER
 out:
 	nrf_wifi_osal_spinlock_irq_rel(hal_dev_ctx->hpriv->opriv,
 				       hal_dev_ctx->rpu_ps_lock,
 				       &flags);
 #endif /* CONFIG_NRF_WIFI_LOW_POWER */
-
+#ifdef SOC_WEZEN
+out1:
+#endif
 	return status;
 }
 
@@ -209,30 +241,51 @@ static enum nrf_wifi_status rpu_mem_write_rom(struct nrf_wifi_hal_dev_ctx *hal_d
 	unsigned long addr_offset = 0;
 	unsigned long fpga_reg_addr_offset = 0;
 
-	status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
+         status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
 					 rom_addr_val,
 					 &addr_offset,
-					 hal_dev_ctx->curr_proc);
+                                         hal_dev_ctx->curr_proc);
 
-	if (status != NRF_WIFI_STATUS_SUCCESS) {
+	 if (status != NRF_WIFI_STATUS_SUCCESS) {
 		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
 				      "%s: pal_rpu_addr_offset_get failed\n",
 				      __func__);
 		return status;
 	}
 
+	/* First set the SOC_MMAP_ADDR_OFFSET_ROM_ACCESS_FPGA_REG to 1
+         * for ROM access
+         */
+        status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
+                                         ROM_ACCESS_REG_ADDR,
+                                         &fpga_reg_addr_offset,
+                                         hal_dev_ctx->curr_proc);
 
-	nrf_wifi_bal_write_block(hal_dev_ctx->bal_dev_ctx,
-				 addr_offset,
-				 src_addr,
-				 len);
+        if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+                                      "%s: pal_rpu_addr_offset_get failed\n",
+                                      __func__);
+                return status;
+        }
 
+        nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
+                                fpga_reg_addr_offset,
+                                RPU_REG_BIT_ROM_ACCESS_ENABLE);	
+
+	if (len == 4) {
+		nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
+        	                         addr_offset,
+                	                 src_addr);
+	} else { 
+		nrf_wifi_bal_write_block(hal_dev_ctx->bal_dev_ctx,
+					 addr_offset,
+					 src_addr,
+					 len);
+	}
 	status = NRF_WIFI_STATUS_SUCCESS;
-
 	return status;
 }
 #endif
-
 static enum nrf_wifi_status rpu_mem_write_ram(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 					      unsigned int ram_addr_val,
 					      void *src_addr,
@@ -242,7 +295,7 @@ static enum nrf_wifi_status rpu_mem_write_ram(struct nrf_wifi_hal_dev_ctx *hal_d
 	unsigned long addr_offset = 0;
 #ifdef CONFIG_NRF_WIFI_LOW_POWER
 	unsigned long flags = 0;
-#endif /* CONFIG_NRF_WIFI_LOW_POWER */
+#endif
 
 	status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
 					 ram_addr_val,
@@ -270,7 +323,7 @@ static enum nrf_wifi_status rpu_mem_write_ram(struct nrf_wifi_hal_dev_ctx *hal_d
 		goto out;
 	}
 #endif /* CONFIG_NRF_WIFI_LOW_POWER */
-	
+
 	nrf_wifi_bal_write_block(hal_dev_ctx->bal_dev_ctx,
 				 addr_offset,
 				 src_addr,
@@ -291,7 +344,8 @@ out:
 #ifdef SOC_WEZEN
 static enum nrf_wifi_status rpu_mem_write_code_ram(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 					       unsigned int code_ram_addr_val,
-					       void *src_addr)
+					       void *src_addr,
+					       unsigned int len)
 					       
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
@@ -316,20 +370,27 @@ static enum nrf_wifi_status rpu_mem_write_code_ram(struct nrf_wifi_hal_dev_ctx *
                 goto out;
         }
 
-	 nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
-			 	 addr_offset,
-				 src_addr);
+	if (len == 4) {
+		nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
+					addr_offset,
+					src_addr);
+	} else {
+		nrf_wifi_bal_write_block(hal_dev_ctx->bal_dev_ctx,
+					 addr_offset,
+					 src_addr,
+					 len);
+	}
 
-	 status = NRF_WIFI_STATUS_SUCCESS;
-out:
+	status = NRF_WIFI_STATUS_SUCCESS;
+out:	
 	return status;
 
 }
 
 static enum nrf_wifi_status rpu_mem_write_data_ram(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 					       unsigned int data_ram_addr_val,
-					       void *src_addr)
-					       
+					       void *src_addr,
+					       unsigned int len)
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
         unsigned long addr_offset = 0;
@@ -352,55 +413,109 @@ static enum nrf_wifi_status rpu_mem_write_data_ram(struct nrf_wifi_hal_dev_ctx *
                                       __func__);
                 goto out;
         }
-
-	 nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
-			 	 addr_offset,
-				 src_addr);
+	
+	if (len == 4) {
+		nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
+					addr_offset,
+					src_addr);
+	} else {
+		 nrf_wifi_bal_write_block(hal_dev_ctx->bal_dev_ctx,
+        		                  addr_offset,
+                        		  src_addr,
+		                          len);
+    	}
 
 	 status = NRF_WIFI_STATUS_SUCCESS;
 out:
 	return status;
 }
 
-enum nrf_wifi_status hal_rpu_mem_code_write(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
-				       unsigned int rpu_mem_addr_val,
-				       void *src_addr,
-				       unsigned int len)
+
+static enum nrf_wifi_status rpu_mem_read_code_ram(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+					     void *src_addr,
+					     unsigned int code_ram_addr_val,
+                                                  unsigned int len)
 {
-	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
+        enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
+        unsigned long addr_offset = 0;
 
-	if (!hal_dev_ctx) {
-		return status;
-	}
-
-	if (!hal_rpu_is_mem_writable(hal_dev_ctx->curr_proc,
-				     rpu_mem_addr_val)) {
+	status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
+					 code_ram_addr_val,
+					 &addr_offset,
+					 hal_dev_ctx->curr_proc);
+	if (status != NRF_WIFI_STATUS_SUCCESS) {
 		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: Invalid memory address 0x%X\n",
-				      __func__,
-				      rpu_mem_addr_val);
+				      "%s: pal_rpu_addr_offset_get failed\n",
+				      __func__);
 		return status;
 	}
-	
-	if (hal_rpu_is_mem_code_ram(rpu_mem_addr_val)) {
-		status = rpu_mem_write_code_ram(hal_dev_ctx,
-                                            rpu_mem_addr_val,
-                                            src_addr);
-	} else if (hal_rpu_is_mem_data_ram(rpu_mem_addr_val)) {
-		status = rpu_mem_write_data_ram(hal_dev_ctx,
-                                            rpu_mem_addr_val,
-                                            src_addr);
+	if (len == 4) {
+		*((unsigned int*)src_addr) = nrf_wifi_bal_read_word(hal_dev_ctx->bal_dev_ctx,
+			               			            addr_offset);
+
+		if (*((unsigned int*)src_addr) == 0xFFFFFFFF) {
+	                nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+        	                              "%s: Error !! Value read at addr_offset = %lx is = %X\n",
+                	                      __func__,
+                        	              addr_offset,
+                                	     *((unsigned int*)src_addr));
+	                status = NRF_WIFI_STATUS_FAIL;
+        	        goto out;
+        	}
 	} else {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: Invalid memory address 0x%X\n",
-				      __func__,
-				      rpu_mem_addr_val);
-		goto out;
+		nrf_wifi_bal_read_block(hal_dev_ctx->bal_dev_ctx,
+	                                src_addr,
+        	                        addr_offset,
+                	                len);
 	}
-
+	status = NRF_WIFI_STATUS_SUCCESS;
 out:
 	return status;
+}
 
+static enum nrf_wifi_status rpu_mem_read_data_ram(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+					     void *src_addr,
+					     unsigned int data_ram_addr_val,
+					     unsigned int len)
+{
+	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
+	unsigned long addr_offset = 0;
+
+
+        status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
+                                         data_ram_addr_val,
+                                         &addr_offset,
+                                         hal_dev_ctx->curr_proc);
+
+        if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+                                      "%s: pal_rpu_addr_offset_get failed\n",
+                                      __func__);
+		return status;
+        }
+
+	if (len == 4) {
+		*((unsigned int*)src_addr) = nrf_wifi_bal_read_word(hal_dev_ctx->bal_dev_ctx,
+			               			            addr_offset);
+		if (*((unsigned int*)src_addr) == 0xFFFFFFFF) {
+	                nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+        	                              "%s: Error !! Value read at addr_offset = %lx is = %X\n",
+                	                      __func__,
+                        	              addr_offset,
+                                	     *((unsigned int*)src_addr));
+	                status = NRF_WIFI_STATUS_FAIL;
+        	        goto out;
+        	}
+	} else {
+		nrf_wifi_bal_read_block(hal_dev_ctx->bal_dev_ctx,
+        	                        src_addr,
+                	                addr_offset,
+                        	        len);
+        }
+
+	status = NRF_WIFI_STATUS_SUCCESS;
+out:
+	return status;
 }
 #endif
 
@@ -620,7 +735,20 @@ enum nrf_wifi_status hal_rpu_mem_read(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 				      rpu_mem_addr_val);
 		goto out;
 	}
-
+#ifdef SOC_WEZEN
+	if (hal_rpu_is_mem_data_ram(rpu_mem_addr_val)) {
+		status = rpu_mem_read_data_ram(hal_dev_ctx,
+					       src_addr,
+					       rpu_mem_addr_val,
+					       len);
+	
+	} else if (hal_rpu_is_mem_code_ram(rpu_mem_addr_val)) {
+                status = rpu_mem_read_code_ram(hal_dev_ctx,
+				   	  src_addr,
+					  rpu_mem_addr_val,
+					  len);
+	} else
+#endif
 	status = rpu_mem_read_ram(hal_dev_ctx,
 				  src_addr,
 				  rpu_mem_addr_val,
@@ -639,14 +767,14 @@ enum nrf_wifi_status hal_rpu_mem_write(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 	if (!hal_dev_ctx) {
 		return status;
 	}
-
+#ifndef SOC_WEZEN
 	if (!src_addr) {
 		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
 				      "%s: Invalid params\n",
 				      __func__);
 		return status;
 	}
-
+#endif
 	if (!hal_rpu_is_mem_writable(hal_dev_ctx->curr_proc,
 				     rpu_mem_addr_val)) {
 		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
@@ -657,12 +785,22 @@ enum nrf_wifi_status hal_rpu_mem_write(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 	}
 
 #ifdef SOC_WEZEN
-	if (hal_rpu_is_mem_rom(hal_dev_ctx->curr_proc, rpu_mem_addr_val)) {
+	if (hal_rpu_is_mem_code_ram(rpu_mem_addr_val)) {
+		status = rpu_mem_write_code_ram(hal_dev_ctx,
+						rpu_mem_addr_val,
+						src_addr,
+						len);
+	} else if (hal_rpu_is_mem_data_ram(rpu_mem_addr_val)) {
+		status = rpu_mem_write_data_ram(hal_dev_ctx,
+						rpu_mem_addr_val,
+						src_addr,
+						len);
+	} else if (hal_rpu_is_mem_rom(hal_dev_ctx->curr_proc,
+				      rpu_mem_addr_val)) {
 		status = rpu_mem_write_rom(hal_dev_ctx,
-					  rpu_mem_addr_val,
-					  src_addr,
-					  len);
-	
+					   rpu_mem_addr_val,
+					   src_addr,
+					   len);
 #ifdef SOC_WEZEN_SECURE_DOMAIN		
 	} else if (hal_rpu_is_mem_secure_ram(rpu_mem_addr_val)) {
 		status = rpu_mem_write_secure_ram(hal_dev_ctx,
@@ -670,15 +808,14 @@ enum nrf_wifi_status hal_rpu_mem_write(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 						  src_addr,
 						  len);
 #endif
-	} else {
+	} else if (hal_rpu_is_mem_ram(hal_dev_ctx->curr_proc, rpu_mem_addr_val)) {
 		status = rpu_mem_write_ram(hal_dev_ctx,
-				   rpu_mem_addr_val,
-				   src_addr,
-				   len);
-	}
+					   rpu_mem_addr_val,
+					   src_addr,
+					   len);
 #else
 	if (hal_rpu_is_mem_core_indirect(hal_dev_ctx->curr_proc,
-				rpu_mem_addr_val)) {
+					 rpu_mem_addr_val)) {
 		status = rpu_mem_write_core(hal_dev_ctx,
 					    rpu_mem_addr_val,
 					    src_addr,
@@ -694,6 +831,7 @@ enum nrf_wifi_status hal_rpu_mem_write(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 					   rpu_mem_addr_val,
 					   src_addr,
 					   len);
+#endif
 	} else {
 		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
 				      "%s: Invalid memory address 0x%X\n",
@@ -703,7 +841,6 @@ enum nrf_wifi_status hal_rpu_mem_write(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 	}
 
 out:
-#endif
 	return status;
 }
 
@@ -779,18 +916,25 @@ enum nrf_wifi_status hal_rpu_mem_clr(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 #ifdef SOC_WEZEN
 	if (mem_type == HAL_RPU_MEM_TYPE_ROM_0 ||
 	    mem_type == HAL_RPU_MEM_TYPE_ROM_1) {
-		 /* First set the SOC_MMAP_ADDR_OFFSET_ROM_ACCESS_FPGA_REG to 1
+	         /* First set the SOC_MMAP_ADDR_OFFSET_ROM_ACCESS_FPGA_REG to 1
         	  * for ROM access
-		  */
+	          */
+		status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
+                	                         ROM_ACCESS_REG_ADDR,
+                        	                 &fpga_reg_addr_offset,
+                                	         hal_dev_ctx->curr_proc);
 
-	        fpga_reg_addr_offset = pal_rpu_rom_access_reg_addr_get(hal_dev_ctx->hpriv->opriv);
-        	//pr_err("writing 1 to 0x3A1048 val= %x\n", 0x1);
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+					      "%s: pal_rpu_addr_offset_get failed\n",
+					      __func__);
+			goto out;
+		}
 
-	        nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
-        	                        fpga_reg_addr_offset,
-                	                0x1);
+		nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
+					fpga_reg_addr_offset,
+                		        RPU_REG_BIT_ROM_ACCESS_ENABLE);
 	}
-
 #endif
 	for (mem_addr = start_addr;
 	     mem_addr <= end_addr;
@@ -807,24 +951,16 @@ enum nrf_wifi_status hal_rpu_mem_clr(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 			goto out;
 		}
 	}
-
 #ifdef SOC_WEZEN
 	if (mem_type == HAL_RPU_MEM_TYPE_ROM_0 ||
 	    mem_type == HAL_RPU_MEM_TYPE_ROM_1) {
-		 /* First set the SOC_MMAP_ADDR_OFFSET_ROM_ACCESS_FPGA_REG to 1
-        	  * for ROM access
-		  */
+	         /* Set Back SOC_MMAP_ADDR_OFFSET_ROM_ACCESS_FPGA_REG to 0 */
 
-	        fpga_reg_addr_offset = pal_rpu_rom_access_reg_addr_get(hal_dev_ctx->hpriv->opriv);
-        	//pr_err("writing 0 to 0x3A1048 val= %x\n", 0x1);
-
-	        nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
-        	                        fpga_reg_addr_offset,
-					0x0);
-
+		nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
+					fpga_reg_addr_offset,
+                		        RPU_REG_BIT_ROM_ACCESS_ENABLE);
 	}
 #endif
-
 	status = NRF_WIFI_STATUS_SUCCESS;
 out:
 	return status;

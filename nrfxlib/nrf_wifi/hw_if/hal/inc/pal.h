@@ -39,7 +39,7 @@
 
 #ifdef RPU_CONFIG_72
 #ifdef SOC_WEZEN
-#define UICR_INITPC_ADDR 0x0E034000
+#define WICR_INITPC_ADDR 0x2F0000
 #define SOC_MMAP_ADDR_OFFSET_WIFI_MCU_REGS 0x000000
 #define SOC_MMAP_ADDR_OFFSET_RAM0_PKD 0x100000
 #define SOC_MMAP_ADDR_OFFSET_RAM1_PKD 0x180000
@@ -47,12 +47,13 @@
 #define SOC_MMAP_ADDR_OFFSET_ROM1_PKD 0x180000
 #define SOC_MMAP_ADDR_OFFSET_DATA_RAM_PKD 0x200000
 #define SOC_MMAP_ADDR_OFFSET_CODE_RAM_PKD 0x300000
-#define SOC_MMAP_ADDR_OFFSET_BELLBOARD_WIFI_APP 0x380000
+#define SOC_MMAP_ADDR_OFFSET_BELLBOARD_WIFI 0x384000
+#define SOC_MMAP_ADDR_OFFSET_BELLBOARD_APP 0x388000
 #define SOC_MMAP_ADDR_OFFSET_FPGA_REGS 0x3A0000
-#define SOC_MMAP_ADDR_OFFSET_GRTC 0x390000
+#define SOC_MMAP_ADDR_OFFSET_GRTC 0x392000
 #define SOC_MAMP_ADDR_OFFSET_SECURERAM 0x3e0000
 #define SOC_MMAP_ADDR_OFFSET_ROM_ACCESS_FPGA_REG 0x3A1048
-#define SOC_MMAP_ADDR_OFFSET_UICR 0x3B0790
+#define SOC_MMAP_ADDR_OFFSET_WICR 0x3B0790
 #else
 #define SOC_MMAP_ADDR_OFFSET_GRAM_PKD 0xC00000
 #define SOC_MMAP_ADDR_OFFSET_SYSBUS 0xE00000
@@ -147,7 +148,7 @@ enum nrf_wifi_status pal_rpu_addr_offset_get(struct nrf_wifi_osal_priv *opriv,
 
 #ifdef SOC_WEZEN
 unsigned long pal_rpu_rom_access_reg_addr_get(struct nrf_wifi_osal_priv *opriv);
-unsigned long pal_rpu_uicr_reg_offset_get(struct nrf_wifi_osal_priv *opriv);
+unsigned long pal_rpu_wicr_reg_offset_get(struct nrf_wifi_osal_priv *opriv);
 #endif
 #ifdef CONFIG_NRF_WIFI_LOW_POWER
 unsigned long pal_rpu_ps_ctrl_reg_addr_get(void);

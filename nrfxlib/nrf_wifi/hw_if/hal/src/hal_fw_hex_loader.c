@@ -93,6 +93,7 @@ static enum nrf_wifi_status nrf_wifi_hal_fw_hex_load_data(struct nrf_wifi_hal_de
 
 	initPcAddress = (int)val;
 
+	hal_dev_ctx->curr_proc = rpu_proc;
 	for (sz = fw_data_size, fw_data_ptr = fw_data;
 	     sz;
 	     sz -= len, fw_data_ptr += len) {
@@ -107,7 +108,7 @@ static enum nrf_wifi_status nrf_wifi_hal_fw_hex_load_data(struct nrf_wifi_hal_de
 			// Address
                         // Take care of left over unaligned data
                         if (byteCount != 0) {
-				status = hal_rpu_mem_code_write(hal_dev_ctx,
+				status = hal_rpu_mem_write(hal_dev_ctx,
 							   address,
 							   word,
 							   4);
@@ -126,7 +127,6 @@ static enum nrf_wifi_status nrf_wifi_hal_fw_hex_load_data(struct nrf_wifi_hal_de
 			}
 
 			address = (int)val;
-			pr_err("------Address = 0x%x----------\n", address);
 			/* set length to 9, to increment fw_data_ptr next by 9.
 			 * as first character is '@' and rest of the
 			 * characters represent the address
@@ -155,7 +155,7 @@ static enum nrf_wifi_status nrf_wifi_hal_fw_hex_load_data(struct nrf_wifi_hal_de
 			byteCount++;
 			
 			if (byteCount == 4) {
-				status = hal_rpu_mem_code_write(hal_dev_ctx,
+				status = hal_rpu_mem_write(hal_dev_ctx,
 							   address,
 							   word,
 							   4);
@@ -174,7 +174,7 @@ static enum nrf_wifi_status nrf_wifi_hal_fw_hex_load_data(struct nrf_wifi_hal_de
 
 	// Take care of left over unaligned data
 	if (byteCount != 0) {
-		status = hal_rpu_mem_code_write(hal_dev_ctx,
+		status = hal_rpu_mem_write(hal_dev_ctx,
 					   address,
 					   word,
 					   4);
@@ -200,7 +200,6 @@ enum nrf_wifi_status nrf_wifi_hal_fw_hex_load(struct nrf_wifi_hal_dev_ctx *hal_d
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 
-	pr_err("Calling nrf_wifi_hal_fw_hex_load_data with rpu_poc= %d\n", rpu_proc);
 	status = nrf_wifi_hal_fw_hex_load_data(hal_dev_ctx, rpu_proc , fw_data, fw_data_size);
 
 	if (status != NRF_WIFI_STATUS_SUCCESS) {
@@ -212,74 +211,4 @@ out:
 	return status;	
 
 }
-
-#if 0
-enum nrf_wifi_status nrf_wifi_hal_fw_hex_boot(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
-						enum RPU_PROC_TYPE rpu_proc)
-{
-	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
-	unsigned int boot_sig_addr = 0;
-	unsigned int run_addr = 0;
-	unsigned int val = 0;
-
-	if (rpu_proc == RPU_PROC_TYPE_MCU_LMAC) {
-		boot_sig_addr = RPU_MEM_LMAC_BOOT_SIG;
-		run_addr = RPU_REG_MIPS_MCU_CONTROL;
-	} else if (rpu_proc == RPU_PROC_TYPE_MCU_UMAC) {
-		boot_sig_addr = RPU_MEM_UMAC_BOOT_SIG;
-		run_addr = RPU_REG_MIPS_MCU2_CONTROL;
-	} else {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				       "%s: Invalid RPU processor type %d\n",
-				       __func__,
-				       rpu_proc);
-		goto out;
-	}
-
-	/* Set the HAL RPU context to the current required context */
-	hal_dev_ctx->curr_proc = rpu_proc;
-
-	/* Clear the firmware pass signature location */
-	status = hal_rpu_mem_write(hal_dev_ctx,
-				   boot_sig_addr,
-				   &val,
-				   sizeof(val));
-
-	if (status != NRF_WIFI_STATUS_SUCCESS) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				       "%s: Clearing of FW pass signature failed for RPU(%d)\n",
-				       __func__,
-				       rpu_proc);
-
-		goto out;
-	}
-
-	/* MIPS will be in its sleep state, on its wait instruction, the concept
-	 * of running assumes the wait at the BEV has been replaced by a
-	 * trampoline to real code, and to get the MIPS running again we need to
-	 * reset it.
-	 */
-
-	/* Perform pulsed soft reset of MIPS - this should now run */
-	status = hal_rpu_reg_write(hal_dev_ctx,
-				   run_addr,
-				   0x1);
-
-	if (status != NRF_WIFI_STATUS_SUCCESS) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				       "%s: RPU processor(%d) run failed\n",
-				       __func__,
-				       rpu_proc);
-
-		goto out;
-	}
-
-out:
-	/* Reset the HAL RPU context to the LMAC context */
-	hal_dev_ctx->curr_proc = RPU_PROC_TYPE_MCU_LMAC;
-
-	return status;	
-
-}
-#endif
 #endif /* HOST_FW_HEX_LOAD_SUPPORT */

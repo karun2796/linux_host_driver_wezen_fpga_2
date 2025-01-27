@@ -468,7 +468,6 @@ enum nrf_wifi_status nrf_wifi_lnx_wlan_fmac_fw_load(struct nrf_wifi_ctx_lnx *rpu
 #endif /* HOST_FW_HEX_LOAD_SUPPORT */
 
 	/* Load the FW's to the RPU */
-	pr_err("--------------calling nrf_wifi_fmac_fw_load------------\n");
 	status = nrf_wifi_fmac_fw_load(rpu_ctx_lnx->rpu_ctx,
 					 &fw_info);
 
@@ -477,7 +476,6 @@ enum nrf_wifi_status nrf_wifi_lnx_wlan_fmac_fw_load(struct nrf_wifi_ctx_lnx *rpu
 		goto out;
 	}
 
-	pr_err("-----nrf_wifi_fmac_fw_load complete---\n");
 	status = NRF_WIFI_STATUS_SUCCESS;
 
 out:
@@ -600,7 +598,6 @@ struct nrf_wifi_ctx_lnx *nrf_wifi_fmac_dev_add_lnx(void)
 
 #if defined(HOST_FW_LOAD_SUPPORT) || defined(HOST_FW_HEX_LOAD_SUPPORT)
 	/* Load the firmware to the RPU */
-	pr_err("calling nrf_wifi_lnx_wlan_fmac_fw_load\n");
 	status = nrf_wifi_lnx_wlan_fmac_fw_load(rpu_ctx_lnx,
 				  		dev);
 #else

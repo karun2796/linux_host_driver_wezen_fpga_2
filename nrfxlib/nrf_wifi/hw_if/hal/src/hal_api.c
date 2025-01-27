@@ -31,7 +31,6 @@ static enum nrf_wifi_status hal_rpu_hard_rst(struct nrf_wifi_hal_dev_ctx *hal_de
         if (proc == RPU_PROC_TYPE_MCU_LMAC) {
                 hard_rst_reg_offset = pal_rpu_hard_rst_reg_offset_get(hal_dev_ctx->hpriv->opriv);
                 hard_rst_val = (1 << RPU_REG_BIT_HARDRST_CTRL);
-		pr_err("-------writing to 0x3FFFc val= %x------\n", hard_rst_val);
 
                 nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
                                         hard_rst_reg_offset,
@@ -40,8 +39,7 @@ static enum nrf_wifi_status hal_rpu_hard_rst(struct nrf_wifi_hal_dev_ctx *hal_de
                 nrf_wifi_osal_sleep_ms(hal_dev_ctx->hpriv->opriv,
                                       500);
 		status = NRF_WIFI_STATUS_SUCCESS;
-#ifdef NOTYET
-		pr_err("clearing the RAM_0\n");
+		
                 status = hal_rpu_mem_clr(hal_dev_ctx,
                                          proc,
 					 HAL_RPU_MEM_TYPE_RAM_0);
@@ -54,7 +52,6 @@ static enum nrf_wifi_status hal_rpu_hard_rst(struct nrf_wifi_hal_dev_ctx *hal_de
                         goto out;
                 }
 		
-		pr_err("clearing the DATA RAM\n");
                 status = hal_rpu_mem_clr(hal_dev_ctx,
                                          proc,
 					 HAL_RPU_MEM_TYPE_DATA_RAM);
@@ -66,8 +63,8 @@ static enum nrf_wifi_status hal_rpu_hard_rst(struct nrf_wifi_hal_dev_ctx *hal_de
 
                         goto out;
 		}
-		pr_err("clearing the ROM 0\n");
-                status = hal_rpu_mem_clr(hal_dev_ctx,
+                
+		status = hal_rpu_mem_clr(hal_dev_ctx,
                                          proc,
 					 HAL_RPU_MEM_TYPE_ROM_0);
 
@@ -78,11 +75,9 @@ static enum nrf_wifi_status hal_rpu_hard_rst(struct nrf_wifi_hal_dev_ctx *hal_de
 
                         goto out;
 		}
-#endif
 	} else if (proc == RPU_PROC_TYPE_MCU_UMAC) {
-#ifdef NOTYET
-		pr_err("clearing the RAM_1\n");
-                status = hal_rpu_mem_clr(hal_dev_ctx,
+                
+		status = hal_rpu_mem_clr(hal_dev_ctx,
                                          proc,
 					 HAL_RPU_MEM_TYPE_RAM_1);
 
@@ -94,7 +89,6 @@ static enum nrf_wifi_status hal_rpu_hard_rst(struct nrf_wifi_hal_dev_ctx *hal_de
                         goto out;
                 }
 		
-		pr_err("clearing the CODE RAM\n");
                 status = hal_rpu_mem_clr(hal_dev_ctx,
                                          proc,
 					 HAL_RPU_MEM_TYPE_CODE_RAM);
@@ -107,7 +101,6 @@ static enum nrf_wifi_status hal_rpu_hard_rst(struct nrf_wifi_hal_dev_ctx *hal_de
                         goto out;
 		}
 
-		pr_err("clearing the ROM 1\n");
                 status = hal_rpu_mem_clr(hal_dev_ctx,
                                          proc,
 					 HAL_RPU_MEM_TYPE_ROM_1);
@@ -119,7 +112,6 @@ static enum nrf_wifi_status hal_rpu_hard_rst(struct nrf_wifi_hal_dev_ctx *hal_de
 
                         goto out;
 		}
-#endif
 		status = NRF_WIFI_STATUS_SUCCESS;
 	}
 #else
@@ -1314,7 +1306,7 @@ struct nrf_wifi_hal_dev_ctx *nrf_wifi_hal_dev_add(struct nrf_wifi_hal_priv *hpri
 	struct nrf_wifi_hal_dev_ctx *hal_dev_ctx = NULL;
 #ifdef SOC_WEZEN
 #ifdef HOST_FW_HEX_LOAD_SUPPORT
-	unsigned long uicr_reg_offset = 0;
+	unsigned long wicr_reg_offset = 0;
 #endif
 #endif
 	
@@ -1424,16 +1416,17 @@ struct nrf_wifi_hal_dev_ctx *nrf_wifi_hal_dev_add(struct nrf_wifi_hal_priv *hpri
 
 #ifdef SOC_WEZEN
 #ifdef HOST_FW_HEX_LOAD_SUPPORT
-	/* write the start address(0x0e034000) of UMAC code in the following (UICR address).
+	/* write the start address of UMAC code in the following (WICR address).
 	 * This address 0x0FFF0790 is host mapped. check confluence page
 	 */
-
-	 uicr_reg_offset = pal_rpu_uicr_reg_offset_get(hal_dev_ctx->hpriv->opriv);
-         pr_err("-------writing to 0x3B0790 val= %x------\n", UICR_INITPC_ADDR);
-		
-         nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
-			 	 uicr_reg_offset,
-				 UICR_INITPC_ADDR);
+//TODO: This is not finalised yet by tools team. enable it once done.
+/*
+ *	wicr_reg_offset = pal_rpu_wicr_reg_offset_get(hal_dev_ctx->hpriv->opriv);
+ *
+ * 	nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
+ *			 	 wicr_reg_offset,
+ *				 WICR_INITPC_ADDR);
+ */
 #endif
 #endif
 
@@ -1507,7 +1500,6 @@ struct nrf_wifi_hal_dev_ctx *nrf_wifi_hal_dev_add(struct nrf_wifi_hal_priv *hpri
 #endif /* CONFIG_NRF700X_DATA_TX */
 	}
 #endif /* !CONFIG_NRF700X_RADIO_TEST */
-	pr_err("returning hal_dev_ctx\n");
 
 	return hal_dev_ctx;
 #ifndef CONFIG_NRF700X_RADIO_TEST
@@ -1762,120 +1754,39 @@ out:
 #ifdef SOC_WEZEN
 #ifdef HOST_FW_HEX_LOAD_SUPPORT
 
-
-enum nrf_wifi_status nrf_wifi_hal_proc_set_initpc(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
-						  int init_pc_addr) 
+enum nrf_wifi_status nrf_wifi_hal_set_initpc(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+					     unsigned int rpu_reg_addr,
+					     unsigned int init_pc_addr) 
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 
-	nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv, "init_pc_addr = %x\n", init_pc_addr);
 	status = hal_rpu_reg_write(hal_dev_ctx,
-				   0x48000808,
+				   rpu_reg_addr,
 				   init_pc_addr);
 	return status;
 }
 
-enum nrf_wifi_status nrf_wifi_hal_set_grtc(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx)
+enum nrf_wifi_status nrf_wifi_hal_set_grtc(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+					    unsigned int rpu_reg_addr,
+					    unsigned int val)
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 
 	status = hal_rpu_reg_write(hal_dev_ctx,
-				   (0x4F99C000 + 0x718),
-				   0x10001);
-	
-	nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv, "writing to (0x4F99C000 + 0x718) \n");
-	if (status != NRF_WIFI_STATUS_SUCCESS) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: GRTC writing failed for offset (%x)\n",
-				      __func__,
-				      0x718);
-		goto out;
-	} 
-
-	nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv, "writing to (0x4F99C000 + 0x510) \n");
-	status = hal_rpu_reg_write(hal_dev_ctx,
-				   (0x4F99C000 + 0x510),
-				   0x2);
-	
-	if (status != NRF_WIFI_STATUS_SUCCESS) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: GRTC writing failed for offset (%x)\n",
-				      __func__,
-				      0x510);
-		goto out;
-	} 
-	nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv, "writing to (0x4F99C000 + 0x060) \n");
-	status = hal_rpu_reg_write(hal_dev_ctx,
-				   (0x4F99C000 + 0x060),
-				   0x1);
-	
-	if (status != NRF_WIFI_STATUS_SUCCESS) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: GRTC writing failed for offset (%x)\n",
-				      __func__,
-				      0x060);
-		goto out;
-	}
-
-out:
+				   rpu_reg_addr,
+				   val);
 
 	return status;
 }
 
-enum nrf_wifi_status nrf_wifi_hal_proc_clk_enable(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
-					     enum RPU_PROC_TYPE rpu_proc)
-{
-	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
-
-	if ((rpu_proc != RPU_PROC_TYPE_MCU_LMAC) &&
-	    (rpu_proc != RPU_PROC_TYPE_MCU_UMAC)) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: Unsupported RPU processor(%d)\n",
-				      __func__,
-				      rpu_proc);
-		goto out;
-	}
-
-	/* Perform pulsed soft reset of MIPS */
-	status = hal_rpu_reg_write(hal_dev_ctx,
-				   0x4809B004UL,
-				   0x1);
-
-	if (status != NRF_WIFI_STATUS_SUCCESS) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: Clock Enabling failed for (%d) processor\n",
-				      __func__,
-				      rpu_proc);
-		goto out;
-	}
-
-
-	/* Wait for it to come out of reset */
-	status = nrf_wifi_hal_poll_reg(hal_dev_ctx,
-					       0x4809B000UL,
-					       0x1,
-					       0,
-					       10);
-
-	if (status != NRF_WIFI_STATUS_SUCCESS) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: MCU (%d) failed to come out of clk_enabling\n",
-				      __func__,
-				      rpu_proc);
-		goto out;
-	}
-
-out:
-	return status;
-}
 
 enum nrf_wifi_status nrf_wifi_hal_cpu_run(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
-					  int val) {
+					  unsigned int rpu_reg_addr,
+					  unsigned int val) {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 	
-	nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv, "In nrf_wifi_hal_cpu_run witing %d to 0x48000800\n");
 	status = hal_rpu_reg_write(hal_dev_ctx,
-				   0x48000800,
+				   rpu_reg_addr,
 				   val);
 	return status;
 }

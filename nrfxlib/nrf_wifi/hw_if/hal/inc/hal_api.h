@@ -181,12 +181,17 @@ enum nrf_wifi_status nrf_wifi_hal_proc_reset(struct nrf_wifi_hal_dev_ctx *hal_ct
 enum nrf_wifi_status nrf_wifi_hal_proc_clk_enable(struct nrf_wifi_hal_dev_ctx *hal_ctx,
 						  enum RPU_PROC_TYPE rpu_proc);
 
-enum nrf_wifi_status nrf_wifi_hal_set_grtc(struct nrf_wifi_hal_dev_ctx *hal_ctx);
+enum nrf_wifi_status nrf_wifi_hal_set_grtc(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+					   unsigned int rpu_reg_addr,
+					   unsigned int val);
 
-enum nrf_wifi_status nrf_wifi_hal_proc_set_initpc(struct nrf_wifi_hal_dev_ctx *hal_ctx,
-						  int init_pc_addr);
+enum nrf_wifi_status nrf_wifi_hal_set_initpc(struct nrf_wifi_hal_dev_ctx *hal_ctx,
+					     unsigned int rpu_reg_addr,
+					     unsigned int init_pc_addr);
 
-enum nrf_wifi_status nrf_wifi_hal_cpu_run(struct nrf_wifi_hal_dev_ctx *hal_ctx, int val);
+enum nrf_wifi_status nrf_wifi_hal_cpu_run(struct nrf_wifi_hal_dev_ctx *hal_ctx,
+					  unsigned int rpu_reg_addr,
+					  unsigned int val);
 #endif
 #endif
 

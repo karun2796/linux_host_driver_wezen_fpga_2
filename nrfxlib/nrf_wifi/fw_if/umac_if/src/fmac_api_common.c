@@ -8,7 +8,6 @@
  * @brief File containing API definitions for the
  * FMAC IF Layer of the Wi-Fi driver.
  */
-#include <linux/kernel.h>
 
 #include "host_rpu_umac_if.h"
 #include "fmac_api.h"
@@ -202,12 +201,7 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_load(struct nrf_wifi_fmac_dev_ctx *fmac_de
 					   struct nrf_wifi_fmac_fw_info *fmac_fw)
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
-
 #ifdef HOST_FW_HEX_LOAD_SUPPORT
-        //char buff[FWLDR_ADDR_LEN + 1];
-        char buff[9];
-	long val;
-
 	if (!(fmac_fw->umac_hex.data)) {
                 nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
                                       "%s: UMAC HEX image not available\n",
@@ -222,13 +216,36 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_load(struct nrf_wifi_fmac_dev_ctx *fmac_de
                 goto out;
         }
 	
-
-
-	status = nrf_wifi_hal_set_grtc(fmac_dev_ctx->hal_dev_ctx);
+	status = nrf_wifi_hal_set_grtc(fmac_dev_ctx->hal_dev_ctx,
+				       GRTC_CLKCFG_ADDR,
+				       GRTC_CLKCFG_VAL);
         if (status != NRF_WIFI_STATUS_SUCCESS) {
                 nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
-                                      "%s: GRTC settings reset failed\n",
-                                      __func__);
+                                      "%s: GRTC settings failed @0x%x\n",
+                                      __func__,
+				       GRTC_CLKCFG_ADDR);
+                goto out;
+        }
+
+	status = nrf_wifi_hal_set_grtc(fmac_dev_ctx->hal_dev_ctx,
+				       GRTC_MODE_ADDR,
+				       GRTC_MODE_VAL);
+        if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: GRTC settings failed @0x%x\n",
+                                      __func__,
+				      GRTC_MODE_ADDR);
+                goto out;
+        }
+
+	status = nrf_wifi_hal_set_grtc(fmac_dev_ctx->hal_dev_ctx,
+				       GRTC_TASKS_START_ADDR,
+				       GRTC_TASKS_START_VAL);
+        if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: GRTC settings failed @0x%x\n",
+                                      __func__,
+				      GRTC_TASKS_START_ADDR);
                 goto out;
         }
 
@@ -236,53 +253,61 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_load(struct nrf_wifi_fmac_dev_ctx *fmac_de
                                           RPU_PROC_TYPE_MCU_UMAC,
                                           fmac_fw->umac_hex.data,
                                           fmac_fw->umac_hex.size);
-
         if (status != NRF_WIFI_STATUS_SUCCESS) {
                 nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
                                       "%s: Failed to load UMAC HEX\n",
                                       __func__);
                 goto out;
         } else {
-        
                 nrf_wifi_osal_log_info(fmac_dev_ctx->fpriv->opriv,
                                        "%s: UMAC HEX loaded\n",
                                        __func__);
         }
-	nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv, "nrf_wifi_hal_fw_hex_load for UMAC complete-----------\n");
-#if 0
-        status = nrf_wifi_hal_fw_chk_boot(fmac_dev_ctx->hal_dev_ctx,
-                                          RPU_PROC_TYPE_MCU_UMAC);
-        if (status != NRF_WIFI_STATUS_SUCCESS) {
-                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
-                                      "%s: UMAC RAM boot check failed\n",
-                                      __func__);
-        } else {
-                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
-                                      "%s: UMAC RAM boot check passed\n",
-                                      __func__);
-        }
-#endif
-	nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv, "calling nrf_wifi_hal_proc_clk_enable to enable the clock for LMAC\n");
 
-	nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv, "calling nrf_wifi_hal_fw_hex_load for LMAC\n");
 	status = nrf_wifi_hal_fw_hex_load(fmac_dev_ctx->hal_dev_ctx,
                                           RPU_PROC_TYPE_MCU_LMAC,
                                           fmac_fw->lmac_hex.data,
                                           fmac_fw->lmac_hex.size);
-
 	if (status != NRF_WIFI_STATUS_SUCCESS) {
                 nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
                                       "%s: Failed to load LMAC HEX\n",
                                       __func__);
                 goto out;
         } else {
-        
-
                 nrf_wifi_osal_log_info(fmac_dev_ctx->fpriv->opriv,
                                        "%s: LMAC HEX loaded\n",
                                        __func__);
         }
-/*
+
+	status = nrf_wifi_hal_set_initpc(fmac_dev_ctx->hal_dev_ctx,
+					 VPR0_INITPC_ADDR,
+					 RPU_ADDR_ROM0_START);
+        if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: Setting INITPC failed\n",
+                                      __func__);
+                goto out;
+        } else {
+                nrf_wifi_osal_log_info(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: Setting INITPC to %x succeeded\n",
+                                      __func__,
+				      RPU_ADDR_ROM0_START);
+        }
+
+	status = nrf_wifi_hal_cpu_run(fmac_dev_ctx->hal_dev_ctx,
+				      VPR0_CPURUN_ADDR,
+				      VPR0_CPURUN_VAL);
+	if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: CPU RUN failed\n",
+                                      __func__);
+                goto out;
+        } else {
+                nrf_wifi_osal_log_info(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: CPURUN succeded; LMAC start given 0x%x. \n",
+                                      __func__,
+				      VPR0_CPURUN_ADDR) ;
+        }
 	status = nrf_wifi_hal_fw_chk_boot(fmac_dev_ctx->hal_dev_ctx,
                                           RPU_PROC_TYPE_MCU_LMAC);
         if (status != NRF_WIFI_STATUS_SUCCESS) {
@@ -290,35 +315,21 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_load(struct nrf_wifi_fmac_dev_ctx *fmac_de
                                       "%s: LMAC HEX boot check failed\n",
                                       __func__);
         } else {
-                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+                nrf_wifi_osal_log_info(fmac_dev_ctx->fpriv->opriv,
                                       "%s: LMAC HEX boot check passed\n",
                                       __func__);
         }
-*/
 
-	status = nrf_wifi_hal_proc_set_initpc(fmac_dev_ctx->hal_dev_ctx,
-					      fmac_fw->lmac_hex.init_pc_addr);
-
+	status = nrf_wifi_hal_fw_chk_boot(fmac_dev_ctx->hal_dev_ctx,
+                                          RPU_PROC_TYPE_MCU_UMAC);
         if (status != NRF_WIFI_STATUS_SUCCESS) {
                 nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
-                                      "%s: Setting INITPC failed\n",
+                                      "%s: UMAC HEX boot check failed\n",
                                       __func__);
-                goto out;
-        }
-
-	status = nrf_wifi_hal_cpu_run(fmac_dev_ctx->hal_dev_ctx, 0x0);
-        if (status != NRF_WIFI_STATUS_SUCCESS) {
-                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
-                                      "%s: CPU RUN failed\n",
+        } else {
+                nrf_wifi_osal_log_info(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: UMAC HEX boot check passed\n",
                                       __func__);
-                goto out;
-        }
-	status = nrf_wifi_hal_cpu_run(fmac_dev_ctx->hal_dev_ctx, 0x1);
-        if (status != NRF_WIFI_STATUS_SUCCESS) {
-                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
-                                      "%s: LMAC processor reset failed\n",
-                                      __func__);
-                goto out;
         }
 #else
 #ifdef HOST_FW_RAM_LOAD_SUPPORT

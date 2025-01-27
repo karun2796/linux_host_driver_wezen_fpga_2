@@ -197,7 +197,6 @@ enum nrf_wifi_status umac_cmd_init(struct nrf_wifi_fmac_dev_ctx *fmac_dev_ctx,
 		umac_cmd_data->disable_beamforming = 1;
 	}
 
-	nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv, "----Calling nrf_wifi_hal_ctrl_cmd_send-------\n");
 	 status = nrf_wifi_hal_ctrl_cmd_send(fmac_dev_ctx->hal_dev_ctx,
 					    umac_cmd,
 					    (sizeof(*umac_cmd) + len));

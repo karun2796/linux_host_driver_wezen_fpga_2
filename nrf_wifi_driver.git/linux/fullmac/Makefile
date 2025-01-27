@@ -28,12 +28,13 @@ endef
 
 define fw_load_err=
 
-Usage make FW_LOAD=<RAM|ROM|PATCH|ROM_PATCH|NONE>
+Usage make FW_LOAD=<RAM|ROM|PATCH|ROM_PATCH|NONE|HEX>
     where:
 	RAM  = FW RAM load support
 	ROM  = FW ROM load support only
 	PATCH  = FW patch load support only
 	ROM_PATCH  = FW ROM and patch load support
+	HEX = FW hex load support
 
 endef
 
@@ -55,7 +56,7 @@ HAL_TB = 1
 DRV_FUNC_NAME =  _hal_tb
 endif
 
-ifneq (, $(filter RAM ROM PATCH ROM_PATCH, $(FW_LOAD)))
+ifneq (, $(filter RAM ROM PATCH ROM_PATCH HEX, $(FW_LOAD)))
 FW_LOAD_SUPPORT = 1
 endif
 
@@ -85,11 +86,6 @@ ccflags-y += -DDEBUG_MODE_SUPPORT
 DRV_MODE_NAME = _dbg
 endif
 
-#ccflags-y += -DHOST_FW_HEX_LOAD_SUPPORT
-#ccflags-y += -DHOST_FW_LOAD_SUPPORT
-#ccflags-y += -DRPU_HARD_RESET_SUPPORT
-#OBJS += $(OSAL_DIR)/hw_if/hal/src/hal_fw_hex_loader.o
-
 ifeq ($(FW_LOAD_SUPPORT), 1)
 ccflags-y += -DHOST_FW_LOAD_SUPPORT
 ifeq ($(FW_LOAD), RAM)
@@ -101,6 +97,8 @@ ccflags-y += -DHOST_FW_PATCH_LOAD_SUPPORT
 else ifeq ($(FW_LOAD), ROM_PATCH)
 ccflags-y += -DHOST_FW_ROM_LOAD_SUPPORT
 ccflags-y += -DHOST_FW_PATCH_LOAD_SUPPORT
+else ifeq ($(FW_LOAD), HEX)
+ccflags-y += -DHOST_FW_HEX_LOAD_SUPPORT
 endif
 endif
 
@@ -235,6 +233,9 @@ endif
 ifeq ($(FW_LOAD), $(filter $(FW_LOAD), RAM))
 OBJS += $(OSAL_DIR)/hw_if/hal/src/hal_fw_ram_loader.o
 endif
+ifeq ($(FW_LOAD), $(filter $(FW_LOAD), HEX))
+OBJS += $(OSAL_DIR)/hw_if/hal/src/hal_fw_hex_loader.o
+endif
 endif
 
 
@@ -283,7 +284,7 @@ ifneq ($(MODE),)
 	$(error "MODE not supported in HAL_TB")
 endif
 else
-ifneq ($(FW_LOAD), $(filter $(FW_LOAD), RAM ROM PATCH ROM_PATCH NONE))
+ifneq ($(FW_LOAD), $(filter $(FW_LOAD), RAM ROM PATCH ROM_PATCH NONE HEX))
 	$(error $(fw_load_err))
 endif
 ifneq ($(MODE), $(filter $(MODE), REG RADIO-TEST DEBUG))
