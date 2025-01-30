@@ -180,7 +180,7 @@ enum nrf_wifi_status nrf_wifi_fmac_deauth(void *fmac_dev_ctx,
  */
 enum nrf_wifi_status nrf_wifi_fmac_assoc(void *fmac_dev_ctx,
 					 unsigned char if_idx,
-					 struct nrf_wifi_umac_assoc_info *assoc_info);
+					 struct nrf_wifi_fmac_assoc_info *assoc_info);
 
 
 /**

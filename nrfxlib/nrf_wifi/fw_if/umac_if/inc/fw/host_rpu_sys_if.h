@@ -196,6 +196,8 @@ enum rpu_ch_bw {
  *
  */
 struct chan_params {
+        /** Operating band see enum op_band */
+        unsigned int op_band;
 	/** Primary channel number */
 	unsigned int primary_num;
 	/** Channel bandwidth */
@@ -831,7 +833,11 @@ enum op_band {
 	/** All bands */
 	BAND_ALL,
 	/** 2.4Ghz band */
-	BAND_24G
+	BAND_24G,
+	/** 5 GHz band */
+	BAND_5G,
+	/** 6 GHz band */
+	BAND_6G
 };
 
 #define TWT_EXTEND_SP_EDCA  0x1

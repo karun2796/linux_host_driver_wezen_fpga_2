@@ -250,10 +250,8 @@ enum nrf_wifi_band {
 	NRF_WIFI_BAND_2GHZ,
 	/** Around 5 GHz band (4.9 - 5.7 GHz) */
 	NRF_WIFI_BAND_5GHZ,
-	/** Unused */
-	NRF_WIFI_BAND_60GHZ,
-	/** Invalid */
-	NRF_WIFI_BAND_INVALID
+	/** 6 GHz band (5.9 -6.4 GHz) */
+	NRF_WIFI_BAND_6GHZ,
 };
 
 /**
@@ -650,7 +648,8 @@ struct nrf_wifi_channel {
 
 
 #define NRF_WIFI_SCAN_MAX_NUM_SSIDS 2
-#define NRF_WIFI_SCAN_MAX_NUM_FREQUENCIES 64
+/** 25 more chaanels in 6 GHz upto U-NII-5*/
+#define NRF_WIFI_SCAN_MAX_NUM_FREQUENCIES 89
 #define MAX_NUM_CHANNELS 42
 
 #define NRF_WIFI_SCAN_BAND_2GHZ	(1 << 0)
@@ -670,7 +669,7 @@ struct nrf_wifi_scan_params {
 	struct nrf_wifi_ssid scan_ssids[NRF_WIFI_SCAN_MAX_NUM_SSIDS];
 	/** used to send probe requests at non CCK rate in 2GHz band */
 	unsigned char no_cck;
-	/**  Bitmap of bands to be scanned. Value Zero will scan both 2.4 and 5 GHZ */
+	/**  Bitmap of bands to be scanned. Value Zero will scan both 2.4, 5 and 6 GHZ */
 	unsigned char bands;
 	/** Information element(s) data @ref nrf_wifi_ie*/
 	struct nrf_wifi_ie ie;
@@ -1290,36 +1289,6 @@ struct nrf_wifi_umac_cmd_auth {
 
 #define NRF_WIFI_CMD_ASSOCIATE_MAC_ADDR_VALID (1 << 0)
 
-/**
- * @brief This structure specifies the parameters to be used when sending an association request.
- *
- */
-
-struct nrf_wifi_umac_assoc_info {
-	/** Frequency of the selected channel in MHz */
-	unsigned int center_frequency;
-	/** ssid @ref nrf_wifi_ssid */
-	struct nrf_wifi_ssid ssid;
-	/** MAC address (various uses) */
-	unsigned char nrf_wifi_bssid[NRF_WIFI_ETH_ADDR_LEN];
-	/**  WPA information element data. @ref nrf_wifi_ie */
-	struct nrf_wifi_ie wpa_ie;
-	/** Whether management frame protection (IEEE 802.11w) is used for the association */
-	unsigned char use_mfp;
-	/** Indicating whether user space controls IEEE 802.1X port. If set, the RPU will
-	 *  assume that the port is unauthorized until authorized by user space.
-	 *  Otherwise, port is marked authorized by default in station mode.
-	 */
-	signed char control_port;
-	/** Previous BSSID used in flag */
-	unsigned int prev_bssid_flag;
-	/** Previous BSSID used in Re-assoc. */
-	unsigned char prev_bssid[NRF_WIFI_ETH_ADDR_LEN];
-	/** Bss max idle timeout value in sec wich will be encapsulated into
-	 *  BSS MAX IDLE IE in assoc request frame.
-	 */
-	unsigned short bss_max_idle_time;
-} __NRF_WIFI_PKD;
 
 /**
  * @brief This structure specifies the parameters to be used when sending an association request.
@@ -1774,7 +1743,7 @@ struct nrf_wifi_ext_capability {
 
 } __NRF_WIFI_PKD;
 
-#define NRF_WIFI_SUPPORTED_CHANNELS_MAX_LEN 64
+#define NRF_WIFI_SUPPORTED_CHANNELS_MAX_LEN 89
 
 /**
  * @brief Supported channels.
@@ -2820,7 +2789,8 @@ enum link_mode {
 	NRF_WIFI_MODE_11G,
 	NRF_WIFI_MODE_11N,
 	NRF_WIFI_MODE_11AC,
-	NRF_WIFI_MODE_11AX
+	NRF_WIFI_MODE_11AX,
+	NRF_WIFI_MODE_11BE
 };
 
 /**

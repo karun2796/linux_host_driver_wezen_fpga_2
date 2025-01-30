@@ -829,7 +829,7 @@ out:
 
 enum nrf_wifi_status nrf_wifi_fmac_assoc(void *dev_ctx,
 					 unsigned char if_idx,
-					 struct nrf_wifi_umac_assoc_info *assoc_info)
+					 struct nrf_wifi_fmac_assoc_info *assoc_info)
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 	struct nrf_wifi_umac_cmd_assoc *assoc_cmd = NULL;

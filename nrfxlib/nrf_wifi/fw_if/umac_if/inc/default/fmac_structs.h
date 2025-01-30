@@ -496,6 +496,31 @@ struct nrf_wifi_fmac_buf_map_info {
 	unsigned long nwb;
 };
 
+struct nrf_wifi_fmac_assoc_info {
+        /** Frequency of the selected channel in MHz */
+        unsigned int center_frequency;
+        /** ssid @ref nrf_wifi_ssid */
+        struct nrf_wifi_ssid ssid;
+        /** MAC address (various uses) */
+        unsigned char nrf_wifi_bssid[NRF_WIFI_ETH_ADDR_LEN];
+        /**  WPA information element data. @ref nrf_wifi_ie */
+        struct nrf_wifi_ie wpa_ie;
+        /** Whether management frame protection (IEEE 802.11w) is used for the association */
+        unsigned char use_mfp;
+        /** Indicating whether user space controls IEEE 802.1X port. If set, the RPU will
+         *  assume that the port is unauthorized until authorized by user space.
+         *  Otherwise, port is marked authorized by default in station mode.
+         */
+        signed char control_port;
+        /** Previous BSSID used in flag */
+        unsigned int prev_bssid_flag;
+        /** Previous BSSID used in Re-assoc. */
+        unsigned char prev_bssid[NRF_WIFI_ETH_ADDR_LEN];
+        /** Bss max idle timeout value in sec wich will be encapsulated into
+         *  BSS MAX IDLE IE in assoc request frame.
+         */
+        unsigned short bss_max_idle_time;
+};
 /**
  * @}
  */

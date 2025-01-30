@@ -1415,7 +1415,7 @@ int nrf_wifi_cfg80211_assoc(struct wiphy *wiphy,
 			      struct cfg80211_assoc_request *req)
 {
 	struct wireless_dev *wdev = NULL;
-	struct nrf_wifi_umac_assoc_info *assoc_info = NULL;
+	struct nrf_wifi_fmac_assoc_info *assoc_info = NULL;
 	struct nrf_wifi_ctx_lnx *rpu_ctx_lnx = NULL;
 	struct nrf_wifi_fmac_vif_ctx_lnx *vif_ctx_lnx = NULL;
 	const u8 *ssid_ie = NULL;
