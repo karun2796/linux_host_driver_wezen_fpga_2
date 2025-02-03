@@ -21,7 +21,8 @@ static bool hal_rpu_is_reg(unsigned int addr_val)
 	if ((addr_base == RPU_ADDR_WIFI_MCU_REGS_REGION) ||
 	    (addr_base == RPU_ADDR_BELLBOARD_GRTC_REGION) ||
 	    (addr_base == RPU_ADDR_SECURERAM_REGION) ||
-	    (addr_base == RPU_ADDR_FPGA_REGS_REGION)
+	    (addr_base == RPU_ADDR_FPGA_REGS_REGION)||
+	    (addr_base == RPU_ADDR_WICR_REGS_REGION)
 #else
 	if ((addr_base == RPU_ADDR_SBUS_START) ||
 	    (addr_base == RPU_ADDR_PBUS_START)

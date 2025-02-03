@@ -249,6 +249,31 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_load(struct nrf_wifi_fmac_dev_ctx *fmac_de
                 goto out;
         }
 
+	//TODO: Derive PATCH address from hex files.
+	status = nrf_wifi_hal_set_wicr(fmac_dev_ctx->hal_dev_ctx,
+				       RPU_REG_WICR_ADDR_VPR0_PATCH_ADDR,
+				       RPU_ADDR_VPR0_PATCH_ADDR_VAL);
+
+	if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: WICR settings failed for vpr0 patch address @0x%x\n",
+                                      __func__,
+				      RPU_ADDR_VPR0_PATCH_ADDR_VAL);
+                goto out;
+        }
+
+	status = nrf_wifi_hal_set_wicr(fmac_dev_ctx->hal_dev_ctx,
+				       RPU_REG_WICR_ADDR_VPR1_PATCH_ADDR,
+				       RPU_ADDR_VPR1_PATCH_ADDR_VAL);
+
+	if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: WICR settings failed for vpr1 patch address @0x%x\n",
+                                      __func__,
+				      RPU_ADDR_VPR1_PATCH_ADDR_VAL);
+                goto out;
+        }
+
         status = nrf_wifi_hal_fw_hex_load(fmac_dev_ctx->hal_dev_ctx,
                                           RPU_PROC_TYPE_MCU_UMAC,
                                           fmac_fw->umac_hex.data,

@@ -1304,11 +1304,6 @@ struct nrf_wifi_hal_dev_ctx *nrf_wifi_hal_dev_add(struct nrf_wifi_hal_priv *hpri
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 	struct nrf_wifi_hal_dev_ctx *hal_dev_ctx = NULL;
-#ifdef SOC_WEZEN
-#ifdef HOST_FW_HEX_LOAD_SUPPORT
-	unsigned long wicr_reg_offset = 0;
-#endif
-#endif
 	
 #ifdef RPU_HARD_RESET_SUPPORT
         enum RPU_PROC_TYPE proc = RPU_PROC_TYPE_MAX;
@@ -1417,16 +1412,19 @@ struct nrf_wifi_hal_dev_ctx *nrf_wifi_hal_dev_add(struct nrf_wifi_hal_priv *hpri
 #ifdef SOC_WEZEN
 #ifdef HOST_FW_HEX_LOAD_SUPPORT
 	/* write the start address of UMAC code in the following (WICR address).
-	 * This address 0x0FFF0790 is host mapped. check confluence page
+	 * This address 0x00FFB004 is host mapped. check confluence page
 	 */
-//TODO: This is not finalised yet by tools team. enable it once done.
-/*
- *	wicr_reg_offset = pal_rpu_wicr_reg_offset_get(hal_dev_ctx->hpriv->opriv);
- *
- * 	nrf_wifi_bal_write_word(hal_dev_ctx->bal_dev_ctx,
- *			 	 wicr_reg_offset,
- *				 WICR_INITPC_ADDR);
- */
+	status = nrf_wifi_hal_set_wicr(hal_dev_ctx,
+                                       RPU_REG_WICR_ADDR_ROM1_START,
+                                       RPU_ADDR_ROM1_START);
+
+	if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(hpriv->opriv,
+                                      "%s: WICR settings failed for ROM1 start address @0x%x\n",
+                                      __func__,
+				      RPU_REG_WICR_ADDR_ROM1_START);
+                goto bal_dev_free;
+        }
 #endif
 #endif
 
@@ -1785,6 +1783,19 @@ enum nrf_wifi_status nrf_wifi_hal_cpu_run(struct nrf_wifi_hal_dev_ctx *hal_dev_c
 					  unsigned int val) {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 	
+	status = hal_rpu_reg_write(hal_dev_ctx,
+				   rpu_reg_addr,
+				   val);
+	return status;
+}
+
+
+enum nrf_wifi_status nrf_wifi_hal_set_wicr(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+					  unsigned int rpu_reg_addr,
+					  unsigned int val) {
+
+	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
+
 	status = hal_rpu_reg_write(hal_dev_ctx,
 				   rpu_reg_addr,
 				   val);

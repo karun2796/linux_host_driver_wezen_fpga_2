@@ -192,6 +192,10 @@ enum nrf_wifi_status nrf_wifi_hal_set_initpc(struct nrf_wifi_hal_dev_ctx *hal_ct
 enum nrf_wifi_status nrf_wifi_hal_cpu_run(struct nrf_wifi_hal_dev_ctx *hal_ctx,
 					  unsigned int rpu_reg_addr,
 					  unsigned int val);
+
+enum nrf_wifi_status nrf_wifi_hal_set_wicr(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+					   unsigned int rpu_reg_addr,
+					   unsigned int val);
 #endif
 #endif
 

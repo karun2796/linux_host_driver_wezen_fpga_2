@@ -90,6 +90,8 @@ enum nrf_wifi_status pal_rpu_addr_offset_get(struct nrf_wifi_osal_priv *opriv,
 	                region_offset = SOC_MMAP_ADDR_OFFSET_GRTC;
         } else if (addr_base == RPU_ADDR_FPGA_REGS_REGION) {
                 region_offset = SOC_MMAP_ADDR_OFFSET_FPGA_REGS;
+	} else if (addr_base == RPU_ADDR_WICR_REGS_REGION) {
+		region_offset = SOC_MMAP_ADDR_OFFSET_WICR_REGS;
 #ifdef SOC_WEZEN_SECURE_DOMAIN
         } else if (addr_base == RPU_ADDR_SECURERAM_REGION) {
                 region_offset = SOC_MAMP_ADDR_OFFSET_SECURERAM;
@@ -123,6 +125,8 @@ enum nrf_wifi_status pal_rpu_addr_offset_get(struct nrf_wifi_osal_priv *opriv,
 		*addr = region_offset + (rpu_addr & RPU_BELLBOARD_GRTC_ADDR_MASK_OFFSET);
 	else if (addr_base == RPU_ADDR_CODE_RAM_REGION)
 		*addr = region_offset + ((rpu_addr - RPU_ADDR_CODE_RAM_START) & RPU_ADDR_MASK_OFFSET);
+	else if (addr_base == RPU_ADDR_WICR_REGS_REGION)
+		*addr = region_offset + (rpu_addr & RPU_WICR_ADDR_MASK_OFFSET);
 	else
 #endif
 	*addr = region_offset + (rpu_addr & RPU_ADDR_MASK_OFFSET);
@@ -138,10 +142,6 @@ unsigned long pal_rpu_rom_access_reg_addr_get(struct nrf_wifi_osal_priv *opriv)
         return SOC_MMAP_ADDR_OFFSET_ROM_ACCESS_FPGA_REG;
 }
 
-unsigned long pal_rpu_wicr_reg_offset_get(struct nrf_wifi_osal_priv *opriv)
-{
-	return SOC_MMAP_ADDR_OFFSET_WICR;
-}
 #endif
 
 #ifdef RPU_HARD_RESET_SUPPORT
