@@ -202,6 +202,7 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_load(struct nrf_wifi_fmac_dev_ctx *fmac_de
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 #ifdef HOST_FW_HEX_LOAD_SUPPORT
+	long vpr0_patch_addr = -1, vpr1_patch_addr = -1;
 	if (!(fmac_fw->umac_hex.data)) {
                 nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
                                       "%s: UMAC HEX image not available\n",
@@ -249,28 +250,48 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_load(struct nrf_wifi_fmac_dev_ctx *fmac_de
                 goto out;
         }
 
-	//TODO: Derive PATCH address from hex files.
+	vpr0_patch_addr =  nrf_wifi_hal_get_fw_hex_patch_addr(fmac_dev_ctx->hal_dev_ctx,
+							      RPU_PROC_TYPE_MCU_LMAC,
+							      fmac_fw->lmac_hex.data,
+							      fmac_fw->lmac_hex.size);
+	if (vpr0_patch_addr == -1) {
+                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: Gettings vpr0 patch address failed\n",
+                                      __func__);
+                goto out;
+	}
 	status = nrf_wifi_hal_set_wicr(fmac_dev_ctx->hal_dev_ctx,
 				       RPU_REG_WICR_ADDR_VPR0_PATCH_ADDR,
-				       RPU_ADDR_VPR0_PATCH_ADDR_VAL);
+				       vpr0_patch_addr);
 
 	if (status != NRF_WIFI_STATUS_SUCCESS) {
                 nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
                                       "%s: WICR settings failed for vpr0 patch address @0x%x\n",
                                       __func__,
-				      RPU_ADDR_VPR0_PATCH_ADDR_VAL);
+				      vpr0_patch_addr);
                 goto out;
         }
 
+	vpr1_patch_addr =  nrf_wifi_hal_get_fw_hex_patch_addr(fmac_dev_ctx->hal_dev_ctx,
+							 RPU_PROC_TYPE_MCU_UMAC,
+							 fmac_fw->umac_hex.data,
+							 fmac_fw->umac_hex.size);
+	if (vpr1_patch_addr == -1) {
+                nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+                                      "%s: Gettings vpr1 patch address failed\n",
+                                      __func__);
+                goto out;
+	}
+
 	status = nrf_wifi_hal_set_wicr(fmac_dev_ctx->hal_dev_ctx,
 				       RPU_REG_WICR_ADDR_VPR1_PATCH_ADDR,
-				       RPU_ADDR_VPR1_PATCH_ADDR_VAL);
+				       vpr1_patch_addr);
 
 	if (status != NRF_WIFI_STATUS_SUCCESS) {
                 nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
                                       "%s: WICR settings failed for vpr1 patch address @0x%x\n",
                                       __func__,
-				      RPU_ADDR_VPR1_PATCH_ADDR_VAL);
+				      vpr1_patch_addr);
                 goto out;
         }
 
