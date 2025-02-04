@@ -986,6 +986,24 @@ enum nrf_wifi_status nrf_wifi_fmac_set_listen_interval(void *fmac_dev_ctx,
 enum nrf_wifi_status nrf_wifi_fmac_set_ps_wakeup_mode(void *fmac_dev_ctx,
 							unsigned char if_idx,
 							bool ps_wakeup_mode);
+#ifdef SOC_WEZEN
+#ifdef CMD_RX_BUFF
+/**
+ * @brief Configure Rx buffer to firmware.
+ * @param fmac_dev_ctx Pointer to the UMAC IF context for a RPU WLAN device.
+ * @param nrf_wifi_rx_buf RX buffer info.
+ * @param num_buffs Number of buffers.
+ *
+ * This function is used to send host Rx buffers to UMAC module
+ *
+ *@retval	NRF_WIFI_STATUS_SUCCESS On success
+ *@retval	NRF_WIFI_STATUS_FAIL On failure to execute command
+ */
+enum nrf_wifi_status nrf_wifi_fmac_prog_rx_buf_info(void *fmac_dev_ctx,
+					       struct nrf_wifi_rx_buf *rx_buf,
+					       unsigned int num_buffs);
+#endif /* CMD_RX_BUFF*/
+#endif /* SOC_WEZEN */
 /**
  * @}
  */

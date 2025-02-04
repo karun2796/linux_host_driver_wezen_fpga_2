@@ -8,6 +8,7 @@ BOUNCE_BUF?=N
 RF?=B0
 CMD_DEMO?=0
 SECURE_DOMAIN?=Y
+CMD_RX_BUFF?=N
 ifeq ($(MODE), RADIO-TEST)
 TWT_SUPPORT?=0
 else
@@ -96,6 +97,9 @@ ccflags-y += -DSOC_WEZEN
 ifeq ($(SECURE_DOMAIN), Y)
 ccflags-y += -DSOC_WEZEN_SECURE_DOMAIN
 ccflags-y += -DCONFIG_WIFI_NRF700X_LOG_LEVEL=3
+endif
+ifeq ($(CMD_RX_BUFF), Y)
+ccflags-y += -DCMD_RX_BUFF
 endif
 ccflags-y += -DRPU_SUPPORT_WAPI
 #Enable this flag when C0 RF is being used.

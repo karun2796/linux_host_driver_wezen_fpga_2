@@ -140,7 +140,9 @@ enum nrf_wifi_umac_commands {
 	/** Set listen interval @ref nrf_wifi_umac_cmd_set_listen_interval */
 	NRF_WIFI_UMAC_CMD_SET_LISTEN_INTERVAL,
 	/** Configure extended power save @ref nrf_wifi_umac_cmd_config_extended_ps */
-	NRF_WIFI_UMAC_CMD_CONFIG_EXTENDED_PS
+	NRF_WIFI_UMAC_CMD_CONFIG_EXTENDED_PS,
+	/** Send RX Buffers to UMAC  */
+	NRF_WIFI_UMAC_CMD_CONFIG_RX_BUF,
 };
 
  /**
@@ -2406,6 +2408,16 @@ struct nrf_wifi_umac_event_twt_sleep {
 	/** @ref twt_sleep_info */
 	struct twt_sleep_info info;
 } __NRF_WIFI_PKD;
+
+struct nrf_wifi_rx_buf {
+	unsigned int skb_pointer;
+	unsigned short skb_desc_no;
+}__NRF_WIFI_PKD;
+struct nrf_wifi_cmd_rx_buf_info {
+	struct nrf_wifi_umac_hdr umac_hdr;
+	unsigned int rx_buf_num;
+	struct nrf_wifi_rx_buf info[0];
+}__NRF_WIFI_PKD;
 
 #define UAPSD_Q_MIN 0
 #define UAPSD_Q_MAX 15

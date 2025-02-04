@@ -39,4 +39,10 @@ enum nrf_wifi_status nrf_wifi_fmac_rx_event_process(struct nrf_wifi_fmac_dev_ctx
 
 void nrf_wifi_fmac_rx_tasklet(void *data);
 
+#ifdef SOC_WEZEN
+#ifdef CMD_RX_BUFF
+unsigned long nrf_wifi_fmac_get_rx_buf_map_addr(struct nrf_wifi_fmac_dev_ctx *fmac_dev_ctx,
+                                                unsigned int desc_id);
+#endif /* CMD_RX_BUFF */
+#endif /* SOC_WEZEN */
 #endif /* __FMAC_RX_H__ */
