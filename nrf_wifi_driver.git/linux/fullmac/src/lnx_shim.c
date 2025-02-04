@@ -91,6 +91,7 @@ static void * lnx_shim_iomem_mmap_inline_rx(unsigned long addr, unsigned long si
 static void lnx_shim_iomem_unmap_inline_rx(volatile void *addr)
 {
 	iounmap(addr);
+	release_mem_region(HOST_PKTRAM_BB_START, HOST_PKTRAM_BB_LEN);
 }
 #endif
 #endif
@@ -103,7 +104,6 @@ static unsigned int lnx_shim_iomem_read_reg32(const volatile void *addr)
 
 static void lnx_shim_iomem_write_reg32(volatile void *addr, unsigned int val)
 {
-//	pr_err("In lnx_shim_iomem_write_reg32 ------val=%x, addr = %x", val, addr);
 	writel(val, addr);
 }
 
