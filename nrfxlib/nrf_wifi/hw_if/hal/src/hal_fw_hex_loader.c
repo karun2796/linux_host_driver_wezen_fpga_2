@@ -134,6 +134,7 @@ static enum nrf_wifi_status nrf_wifi_hal_fw_hex_load_data(struct nrf_wifi_hal_de
 			len = (1 + FWLDR_ADDR_LEN);
 			word = 0;
 			byteCount = 0;
+			//nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv, "hal_rpu_mem_write-----address= %0x\n", address);
 		} else {
 			//Data
 			val = parse_data(hal_dev_ctx, fw_data_ptr);

@@ -1444,7 +1444,13 @@ struct nrf_wifi_hal_dev_ctx *nrf_wifi_hal_dev_add(struct nrf_wifi_hal_priv *hpri
                                       __func__,
 				      RPU_REG_WICR_ADDR_ROM1_START);
                 goto bal_dev_free;
-        }
+	} else {
+		nrf_wifi_osal_log_err(hpriv->opriv,
+				      "WICR settings Wrote %x to %x\n",
+				      RPU_ADDR_ROM1_START,
+				      RPU_REG_WICR_ADDR_ROM1_START);
+	}
+
 #endif
 #endif
 

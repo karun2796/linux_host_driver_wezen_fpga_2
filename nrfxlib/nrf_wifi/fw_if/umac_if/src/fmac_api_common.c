@@ -270,7 +270,12 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_load(struct nrf_wifi_fmac_dev_ctx *fmac_de
                                       __func__,
 				      vpr0_patch_addr);
                 goto out;
-        }
+        } else {
+		nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+				      "vpr0 patch address %x wrote to %x\n",
+				      vpr0_patch_addr,
+				      RPU_REG_WICR_ADDR_VPR0_PATCH_ADDR);
+	}
 
 	vpr1_patch_addr =  nrf_wifi_hal_get_fw_hex_patch_addr(fmac_dev_ctx->hal_dev_ctx,
 							 RPU_PROC_TYPE_MCU_UMAC,
@@ -293,7 +298,12 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_load(struct nrf_wifi_fmac_dev_ctx *fmac_de
                                       __func__,
 				      vpr1_patch_addr);
                 goto out;
-        }
+        } else {
+		nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+				      "vpr1 patch address %x wrote to %x\n",
+				      vpr1_patch_addr,
+				      RPU_REG_WICR_ADDR_VPR1_PATCH_ADDR);
+	}
 
         status = nrf_wifi_hal_fw_hex_load(fmac_dev_ctx->hal_dev_ctx,
                                           RPU_PROC_TYPE_MCU_UMAC,
