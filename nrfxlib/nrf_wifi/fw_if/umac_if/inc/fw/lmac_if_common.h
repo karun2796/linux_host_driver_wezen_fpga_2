@@ -101,6 +101,8 @@ struct lmac_prod_stats {
 	unsigned int scan_abort_req;
 	unsigned int scan_abort_complete;
 	unsigned int internal_buf_pool_null;
+	unsigned int rpuLockupCnt;
+	unsigned int rpuLockupRecoveryDone;
 };
 
 /**

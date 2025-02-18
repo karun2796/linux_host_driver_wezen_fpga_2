@@ -91,7 +91,7 @@ struct sap_pend_frames_bitmap {
 	/** Pending frames bitmap for each access category */
 	unsigned char pend_frames_bitmap;
 } __NRF_WIFI_PKD;
-
+#define NRF_WIFI_MAX_SAP_CLIENTS 4
 /**
  * @brief This structure represents the information related to UMAC.
  *
@@ -102,7 +102,7 @@ struct host_rpu_umac_info {
 	/** UMAC version */
 	unsigned int version;
 	/** @ref sap_pend_frames_bitmap */
-	struct sap_pend_frames_bitmap sap_bitmap[4];
+	struct sap_pend_frames_bitmap sap_bitmap[NRF_WIFI_MAX_SAP_CLIENTS];
 	/** Hardware queues info &enum host_rpu_hpqm_info */
 	struct host_rpu_hpqm_info hpqm_info;
 	/** OTP params */

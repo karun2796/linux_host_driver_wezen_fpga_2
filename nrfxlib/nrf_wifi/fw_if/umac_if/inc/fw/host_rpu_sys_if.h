@@ -314,7 +314,10 @@ struct umac_rx_dbg_params {
 	unsigned int null_skb_pointer_from_lmac;
 	/** Number of unexpected management packets received in coalesce event */
 	unsigned int unexpected_mgmt_pkt;
-
+	/** Unprotected error data frames received in security mode */
+	unsigned int unsecured_data_error;
+	/** Number of packets flushed from reorder buffer before going to sleep */
+	unsigned int reorder_flush_pkt_count;
 } __NRF_WIFI_PKD;
 
 /**
@@ -616,6 +619,11 @@ struct rpu_lmac_stats {
 	unsigned int scan_abort_complete;
 	/** Number of internal buffer pool null counts */
 	unsigned int internal_buf_pool_null;
+	/** RPU hardware lockup event detection count */
+	unsigned int rpu_hw_lockup_count;
+	/** RPU hardware lockup recovery completed count */
+	unsigned int rpu_hw_lockup_recovery_done;
+
 } __NRF_WIFI_PKD;
 
 #endif /* !CONFIG_NRF700X_RADIO_TEST */
