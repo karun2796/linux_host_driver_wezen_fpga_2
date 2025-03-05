@@ -66,7 +66,7 @@ unsigned char reorder_buf_size = 32;
 unsigned char max_rxampdu_size = MAX_RX_AMPDU_SIZE_64KB;
 
 #ifdef OFFLINE_MODE
-unsigned char max_tx_aggregation = 4;
+unsigned char max_tx_aggregation = 13;
 
 unsigned int rx1_num_bufs = 21;
 unsigned int rx2_num_bufs = 21;
