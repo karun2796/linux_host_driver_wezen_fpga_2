@@ -1772,16 +1772,22 @@ void nrf_wifi_cfg80211_mgmt_frame_reg(struct wiphy *wiphy,
         }
 
         if (frame_type_match == true) {
-#ifdef notyet
-                status = nrf_wifi_fmac_mgmt_frame_reg(rpu_ctx_lnx->rpu_ctx,
+#ifdef CONFIG_NRF700X_STA_MODE
+		status = nrf_wifi_fmac_register_frame(rpu_ctx_lnx->rpu_ctx,
+						      vif_ctx_lnx->if_idx,
+						      frame_info);
+#else
+#ifdef CONFIG_NRF700X_AP_MODE
+               status = nrf_wifi_fmac_mgmt_frame_reg(rpu_ctx_lnx->rpu_ctx,
                                                         vif_ctx_lnx->if_idx,
                                                         frame_info);
 
+#endif /* CONFIG_NRF700X_AP_MODE */
+#endif /* CONFIG_NRF700X_STA_MODE */
                 if (status == NRF_WIFI_STATUS_FAIL) {
                         pr_err("%s: nrf_wifi_fmac_mgmt_frame_reg failed\n", __func__);
                         goto out;
                 }
-#endif
 		status = NRF_WIFI_STATUS_SUCCESS;
         }
 out:
