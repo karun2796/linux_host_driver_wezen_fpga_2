@@ -2912,6 +2912,23 @@ void wiphy_init(struct wiphy *wiphy)
 	wiphy->n_cipher_suites = ARRAY_SIZE(cipher_suites);
 }
 
+const static u8 if_types_ext_capa_sta[] = {
+         [0] = WLAN_EXT_CAPA1_EXT_CHANNEL_SWITCHING,
+         [2] = WLAN_EXT_CAPA3_MULTI_BSSID_SUPPORT,
+#ifdef RPU_HE_SUPPORT
+	 [9] = WLAN_EXT_CAPA10_TWT_REQUESTER_SUPPORT,
+#endif
+};
+
+const static struct wiphy_iftype_ext_capab iftypes_ext_capa[] = {
+        {
+                .iftype = NL80211_IFTYPE_STATION,
+                .extended_capabilities = if_types_ext_capa_sta,
+                .extended_capabilities_mask = if_types_ext_capa_sta,
+                .extended_capabilities_len = sizeof(if_types_ext_capa_sta),
+        },
+};
+
 
 struct wiphy *cfg80211_if_init(void)
 {
@@ -2945,6 +2962,11 @@ struct wiphy *cfg80211_if_init(void)
 	/* Below flag is required for passing duration by iw utilities */
 	wiphy_ext_feature_set(wiphy, NL80211_EXT_FEATURE_SET_SCAN_DWELL);
 
+#ifdef CONFIG_NRF700X_STA_MODE
+	/* Extended Capabilities */
+	wiphy->iftype_ext_capab = iftypes_ext_capa;
+	wiphy->num_iftype_ext_capab = ARRAY_SIZE(iftypes_ext_capa);
+#endif /* CONFIG_NRF700X_STA_MODE */
 	wiphy_init(wiphy);
 
 	if (wiphy_register(wiphy) < 0) {

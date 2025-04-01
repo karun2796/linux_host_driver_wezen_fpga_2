@@ -17,6 +17,8 @@ endif
 LOW_POWER?=1
 ifeq ($(PLATFORM),WEZEN)
 MODE?=REG
+ccflags-y += -DRPU_VHT_SUPPORT
+ccflags-y += -DRPU_HE_SUPPORT
 ifeq ($(WLAN_SUPPORT), 1)
 FW_LOAD?=ROM
 endif
