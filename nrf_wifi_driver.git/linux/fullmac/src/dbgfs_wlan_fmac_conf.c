@@ -13,6 +13,13 @@
 #include "lnx_net_stack.h"
 #include "lnx_util.h"
 
+#ifdef SOC_WEZEN
+#ifndef CONFIG_NRF700X_RADIO_TEST
+	long data_rate = -1;
+	long rate_flag = -1;
+	unsigned int ps_timeout_ms = 100;
+#endif /* CONFIG_NRF700X_RADIO_TEST */
+#endif /* SOC_WEZEN */
 #ifndef CONFIG_NRF700X_RADIO_TEST
 extern char* rf_params;
 #endif /* !CONFIG_NRF700X_RADIO_TEST */
@@ -967,6 +974,13 @@ static int nrf_wifi_lnx_wlan_fmac_conf_disp(struct seq_file *m, void *v)
 	seq_printf(m,
 		"uapsd_queue = %d\n",
 		conf_params->uapsd_queue);
+#ifdef SOC_WEZEN
+#ifndef CONFIG_NRF700X_RADIO_TEST
+	seq_printf(m,
+		   "ps_timeout = %s\n",
+		   ps_timeout_ms ? "Enabled" : "Disabled" );
+#endif /* CONFIG_NRF700X_RADIO_TEST */
+#endif /* SOC_WEZEN */
 	return 0;
 }
 
@@ -1074,10 +1088,6 @@ static ssize_t nrf_wifi_lnx_wlan_fmac_conf_write(struct file *file,
 	ssize_t ret_val = count;
 	struct nrf_wifi_ctx_lnx *rpu_ctx_lnx = NULL;
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
-#ifdef SOC_WEZEN
-	long data_rate = -1;
-	long rate_flag = -1;
-#endif /* SOC_WEZEN */
 
 	rpu_ctx_lnx = (struct nrf_wifi_ctx_lnx *)file->f_inode->i_private;
 
@@ -1993,6 +2003,31 @@ static ssize_t nrf_wifi_lnx_wlan_fmac_conf_write(struct file *file,
 
 		rpu_ctx_lnx->conf_params.tx_pkt_fec_coding = val;
 #endif /* !SOC_CALDER */
+#ifdef SOC_WEZEN
+#ifndef CONFIG_NRF700X_RADIO_TEST
+	} else if (param_get_val(conf_buf, "ps_timeout=", &val)) {
+		if (val < 0) {
+			snprintf(err_str,
+				 MAX_ERR_STR_SIZE,
+				 "Invalid value %lu\n",
+				 val);
+			ret_val = -EINVAL;
+			goto error;
+		}
+
+		ps_timeout_ms = val;
+
+		status = nrf_wifi_fmac_set_power_save_timeout(rpu_ctx_lnx->rpu_ctx,
+							      rpu_ctx_lnx->def_vif_ctx->if_idx,
+							      ps_timeout_ms);
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			snprintf(err_str,
+				 MAX_ERR_STR_SIZE,
+				 "Programming power save timeout failed\n");
+			goto error;
+		}
+#endif
+#endif
 	} else if (param_get_sval(conf_buf, "tx_pkt_mcs=", &sval)) {
 #ifdef CONFIG_NRF700X_RADIO_TEST
 		if (rpu_ctx_lnx->conf_params.op_mode == RPU_OP_MODE_RADIO_TEST) {
