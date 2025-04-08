@@ -2966,6 +2966,8 @@ struct wiphy *cfg80211_if_init(void)
 	/* Extended Capabilities */
 	wiphy->iftype_ext_capab = iftypes_ext_capa;
 	wiphy->num_iftype_ext_capab = ARRAY_SIZE(iftypes_ext_capa);
+	/* Multi bssid support */
+	wiphy->support_mbssid = 1;
 #endif /* CONFIG_NRF700X_STA_MODE */
 	wiphy_init(wiphy);
 
