@@ -1165,8 +1165,8 @@ static bool program_peer_key(struct nrf_wifi_fmac_dev_ctx *dev_ctx,
                         default:
                                 micKeyLen = 0;
                         }
-                        if ((peer_key->cipher_suite == NRF_WIFI_FMAC_CIPHER_SUITE_CCMP_256) /*||
-                            (peer_key->cipher_suite == NRF_WIFI_FMAC_CIPHER_SUITE_GCMP_256)*/)
+                        if ((peer_key->cipher_suite == NRF_WIFI_FMAC_CIPHER_SUITE_CCMP_256) ||
+                            (peer_key->cipher_suite == NRF_WIFI_FMAC_CIPHER_SUITE_GCMP_256))
                                 revMemCopy(peerKeyDB->ucstKey,
 					   peer_key->key.nrf_wifi_key,
 					   PEER_ENC_KEY_LEN_32);
@@ -1203,8 +1203,8 @@ static bool program_peer_key(struct nrf_wifi_fmac_dev_ctx *dev_ctx,
                                 micKeyLen = 0;
                         break;
                         }
-                        if ((peer_key->cipher_suite == NRF_WIFI_FMAC_CIPHER_SUITE_CCMP_256) /*||
-                            (peer_key->cipher_suite == NRF_WIFI_FMAC_CIPHER_SUITE_GCMP_256)*/)
+                        if ((peer_key->cipher_suite == NRF_WIFI_FMAC_CIPHER_SUITE_CCMP_256) ||
+                            (peer_key->cipher_suite == NRF_WIFI_FMAC_CIPHER_SUITE_GCMP_256))
                                 revMemCopy(peerKeyDB->bcstKey,
 					   peer_key->key.nrf_wifi_key,
 					   PEER_ENC_KEY_LEN_32);
