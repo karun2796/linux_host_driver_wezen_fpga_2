@@ -15,11 +15,23 @@
 
 #ifdef SOC_WEZEN
 #ifndef CONFIG_NRF700X_RADIO_TEST
-	long data_rate = -1;
-	long rate_flag = -1;
-	unsigned int ps_timeout_ms = 100;
+#define WIFI_LISTEN_INTERVAL_MIN 0
+#define WIFI_LISTEN_INTERVAL_MAX 65535
+/** @brief Wi-Fi power save modes. */
+enum wifi_ps_wakeup_mode {
+        /** DTIM based wakeup. */
+        WIFI_PS_WAKEUP_MODE_DTIM = 0,
+        /** Listen interval based wakeup. */
+        WIFI_PS_WAKEUP_MODE_LISTEN_INTERVAL,
+};
+long data_rate = -1;
+long rate_flag = -1;
+unsigned int ps_timeout_ms = 100;
+unsigned int ps_listen_interval = 10;
+int ps_wakeup_mode = WIFI_PS_WAKEUP_MODE_DTIM;
 #endif /* CONFIG_NRF700X_RADIO_TEST */
 #endif /* SOC_WEZEN */
+
 #ifndef CONFIG_NRF700X_RADIO_TEST
 extern char* rf_params;
 #endif /* !CONFIG_NRF700X_RADIO_TEST */
@@ -979,6 +991,12 @@ static int nrf_wifi_lnx_wlan_fmac_conf_disp(struct seq_file *m, void *v)
 	seq_printf(m,
 		   "ps_timeout = %s\n",
 		   ps_timeout_ms ? "Enabled" : "Disabled" );
+	seq_printf(m,
+		   "ps_listen_interval = %d\n",
+		   ps_listen_interval);
+	seq_printf(m,
+		   "ps_wakeup_mode = %s\n",
+		   ps_wakeup_mode ? "LISTEN INTERVAL" : "DTIM");
 #endif /* CONFIG_NRF700X_RADIO_TEST */
 #endif /* SOC_WEZEN */
 	return 0;
@@ -2024,6 +2042,53 @@ static ssize_t nrf_wifi_lnx_wlan_fmac_conf_write(struct file *file,
 			snprintf(err_str,
 				 MAX_ERR_STR_SIZE,
 				 "Programming power save timeout failed\n");
+			goto error;
+		}
+	} else if (param_get_val(conf_buf, "ps_listen_interval=", &val)) {
+		if (val < WIFI_LISTEN_INTERVAL_MIN ||
+		    val > WIFI_LISTEN_INTERVAL_MAX) {
+			snprintf(err_str,
+				 MAX_ERR_STR_SIZE,
+				 "Invalid value %lu\n",
+				 val);
+			ret_val = -EINVAL;
+			goto error;
+		}
+
+		ps_listen_interval = val;
+
+		status = nrf_wifi_fmac_set_listen_interval(rpu_ctx_lnx->rpu_ctx,
+							   rpu_ctx_lnx->def_vif_ctx->if_idx,
+							   ps_listen_interval);
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			snprintf(err_str,
+				 MAX_ERR_STR_SIZE,
+				 "Programming power save listen_interval failed\n");
+			goto error;
+		}
+	} else if (param_get_val(conf_buf, "ps_wakeup_mode=", &val)) {
+
+		if (val < 0 || val > 1) {
+			snprintf(err_str,
+				 MAX_ERR_STR_SIZE,
+				 "Invalid value %lu\n",
+				 val);
+			ret_val = -EINVAL;
+			goto error;
+		}
+
+		if (val)
+			ps_wakeup_mode = WIFI_PS_WAKEUP_MODE_LISTEN_INTERVAL;
+		else
+			ps_wakeup_mode = WIFI_PS_WAKEUP_MODE_DTIM;
+
+		status = nrf_wifi_fmac_set_ps_wakeup_mode(rpu_ctx_lnx->rpu_ctx,
+							  rpu_ctx_lnx->def_vif_ctx->if_idx,
+							  ps_wakeup_mode);
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			snprintf(err_str,
+				 MAX_ERR_STR_SIZE,
+				 "Programming power save wakeup mode failed\n");
 			goto error;
 		}
 #endif
