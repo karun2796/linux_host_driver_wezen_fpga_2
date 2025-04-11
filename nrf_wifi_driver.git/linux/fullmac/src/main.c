@@ -834,9 +834,12 @@ enum nrf_wifi_status nrf_wifi_fmac_dev_init_lnx(struct nrf_wifi_ctx_lnx *rpu_ctx
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 #ifndef CONFIG_NRF700X_RADIO_TEST
-	char *default_mac_addr = "0019F5331179";
-        unsigned char base_mac_addr[NRF_WIFI_ETH_ADDR_LEN];
 
+#ifdef SOC_WEZEN
+	char default_mac_addr[NRF_WIFI_ETH_ADDR_LEN];
+#else
+	unsigned char base_mac_addr[NRF_WIFI_ETH_ADDR_LEN];
+#endif /* SOC_WEZEN */
 	struct nrf_wifi_fmac_vif_ctx_lnx *vif_ctx_lnx = NULL;
 	struct nrf_wifi_umac_add_vif_info add_vif_info;
 	struct nrf_wifi_fmac_dev_ctx *fmac_dev_ctx = NULL;
@@ -863,6 +866,7 @@ enum nrf_wifi_status nrf_wifi_fmac_dev_init_lnx(struct nrf_wifi_ctx_lnx *rpu_ctx
 
 #ifndef CONFIG_NRF700X_RADIO_TEST
 
+#ifndef SOC_WEZEN
 	status = nrf_wifi_fmac_otp_mac_addr_get(rpu_ctx_lnx->rpu_ctx, 0,
 
                                                 base_mac_addr);
@@ -872,12 +876,17 @@ enum nrf_wifi_status nrf_wifi_fmac_dev_init_lnx(struct nrf_wifi_ctx_lnx *rpu_ctx
                 goto out;
         }
 
+#endif /* SOC_WEZEN */
         fmac_dev_ctx = rpu_ctx_lnx->rpu_ctx;
 
-        if (nrf_wifi_utils_hex_str_to_val(fmac_dev_ctx->fpriv->opriv,
-                                          base_mac_addr,
+	if (nrf_wifi_utils_hex_str_to_val(fmac_dev_ctx->fpriv->opriv,
+#ifdef SOC_WEZEN
+					  default_mac_addr,
+#else
+					  base_mac_addr,
+#endif /* SOC_WEZEN */
                                           sizeof(default_mac_addr),
-                                          default_mac_addr) == -1) {
+                                          base_mac_addr) == -1) {
                 pr_err("%s: hex_str_to_val failed\n", __func__);
                 goto out;
         }
@@ -891,7 +900,11 @@ enum nrf_wifi_status nrf_wifi_fmac_dev_init_lnx(struct nrf_wifi_ctx_lnx *rpu_ctx
 
 	vif_ctx_lnx = nrf_wifi_lnx_wlan_fmac_add_vif(rpu_ctx_lnx,
 						  "nrf_wifi",
+#ifdef SOC_WEZEN
+						  default_mac_addr,
+#else
 						  base_mac_addr,
+#endif /* SOC_WEZEN */
 						  NL80211_IFTYPE_STATION);
 
 	rtnl_unlock();
@@ -913,7 +926,12 @@ enum nrf_wifi_status nrf_wifi_fmac_dev_init_lnx(struct nrf_wifi_ctx_lnx *rpu_ctx
 	       strlen("wlan0"));
 
 	ether_addr_copy(add_vif_info.mac_addr,
-			base_mac_addr);
+#ifdef SOC_WEZEN
+			default_mac_addr
+#else
+			base_mac_addr
+#endif /* SOC_WEZEN */
+			);
 
 	vif_ctx_lnx->if_idx = nrf_wifi_fmac_add_vif(rpu_ctx_lnx->rpu_ctx,
 						    vif_ctx_lnx,
@@ -985,7 +1003,13 @@ enum nrf_wifi_status nrf_wifi_fmac_dev_init_lnx(struct nrf_wifi_ctx_lnx *rpu_ctx
 
 #ifndef CONFIG_NRF700X_RADIO_TEST
 	status = nrf_wifi_fmac_set_vif_macaddr(
-		rpu_ctx_lnx->rpu_ctx, vif_ctx_lnx->if_idx, base_mac_addr);
+		rpu_ctx_lnx->rpu_ctx, vif_ctx_lnx->if_idx,
+#ifdef SOC_WEZEN
+		default_mac_addr
+#else
+		base_mac_addr
+#endif /* SOC_WEZEN */
+		);
 	if (status != NRF_WIFI_STATUS_SUCCESS) {
 		pr_err("%s: MAC address change failed\n", __func__);
 		goto out;
