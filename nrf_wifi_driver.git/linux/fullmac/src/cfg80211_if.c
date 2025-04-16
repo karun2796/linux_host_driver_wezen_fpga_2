@@ -968,10 +968,9 @@ int nrf_wifi_cfg80211_scan(struct wiphy *wiphy,
 	rpu_ctx_lnx = wiphy_priv(wiphy);
 	vif_ctx_lnx = netdev_priv(wdev->netdev);
 
-	req->n_channels = 0;
 	scan_info = kzalloc((sizeof(*scan_info) +
-			     (sizeof(struct nrf_wifi_channel) *
-			      req->n_channels)), GFP_KERNEL);
+			    (sizeof(scan_info->scan_params.center_frequency[0]) *
+			    req->n_channels)), GFP_KERNEL);
 
 	if(!scan_info) {
 		pr_err("%s: Unable to allocate memory\n", __func__);
@@ -982,39 +981,11 @@ int nrf_wifi_cfg80211_scan(struct wiphy *wiphy,
 		scan_info->scan_params.passive_scan = 1;
 		
 	scan_info->scan_params.num_scan_channels = req->n_channels;
-#ifdef notyet
-	for (indx = 0; indx < req->n_channels; indx++) {
 
-		scan_info->scan_params.channels[indx].band =
-			req->channels[indx]->band;
-		scan_info->scan_params.channels[indx].center_frequency =
-			req->channels[indx]->center_freq;
-		scan_info->scan_params.channels[indx].hw_value =
-			req->channels[indx]->hw_value;
-		scan_info->scan_params.channels[indx].nrf_wifi_flags =
-			req->channels[indx]->flags;
-		scan_info->scan_params.channels[indx].nrf_wifi_max_antenna_gain =
-			req->channels[indx]->max_antenna_gain;
-		scan_info->scan_params.channels[indx].nrf_wifi_max_power =
-			req->channels[indx]->max_power;
-		scan_info->scan_params.channels[indx].nrf_wifi_max_reg_power =
-			req->channels[indx]->max_reg_power;
-		scan_info->scan_params.channels[indx].nrf_wifi_beacon_found =
-			req->channels[indx]->beacon_found;
-		scan_info->scan_params.channels[indx].nrf_wifi_orig_flags =
-			req->channels[indx]->orig_flags;
-		scan_info->scan_params.channels[indx].nrf_wifi_orig_mag =
-			req->channels[indx]->orig_mag;
-		scan_info->scan_params.channels[indx].nrf_wifi_orig_mpwr =
-			req->channels[indx]->orig_mpwr;
-
-		scan_info->scan_params.scan_duration[indx] =
-			req->duration;
-		scan_info->scan_params.probe_cnt[indx] = CHNL_PROBE_CNT;
-
+	for (i = 0; i < req->n_channels; i++) {
+		scan_info->scan_params.center_frequency[i] =
+			req->channels[i]->center_freq;
 	}
-	scan_info->scan_params.oper_ch_duration = req->duration;
-#endif
 
 	for (i = 0; i < req->n_ssids; i++) {
 		if (req->ssids[i].ssid_len == 0)
@@ -1470,6 +1441,11 @@ int nrf_wifi_cfg80211_assoc(struct wiphy *wiphy,
 	assoc_info->use_mfp = req->use_mfp;
 
 	assoc_info->control_port = req->crypto.control_port;
+
+	if (req->prev_bssid) {
+		assoc_info->prev_bssid_flag = 1;
+		memcpy(assoc_info->prev_bssid, req->prev_bssid, ETH_ALEN);
+        }
 
 	status = nrf_wifi_fmac_assoc(rpu_ctx_lnx->rpu_ctx,
 				       vif_ctx_lnx->if_idx,

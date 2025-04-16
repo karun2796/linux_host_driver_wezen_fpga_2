@@ -1480,6 +1480,7 @@ int __init nrf_wifi_init_lnx(void)
 	callbk_fns.roc_callbk_fn = &nrf_wifi_cfg80211_roc_callbk_fn;
 	callbk_fns.roc_cancel_callbk_fn = &nrf_wifi_cfg80211_roc_cancel_callbk_fn;
 	callbk_fns.tx_status_callbk_fn = &nrf_wifi_cfg80211_tx_status_callbk_fn;
+	callbk_fns.mgmt_tx_status = &nrf_wifi_cfg80211_tx_status_callbk_fn;
 #else
 	callbk_fns.cookie_rsp_callbk_fn = &nrf_wifi_wpa_supp_cookie_rsp_callbk_fn;
 	callbk_fns.scan_start_callbk_fn = &nrf_wifi_wpa_supp_scan_start_callbk_fn;
